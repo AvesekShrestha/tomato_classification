@@ -33,3 +33,7 @@ class Conflict(AppException):
 class InternalServerError(AppException):
     def __init__(self, message: str = "Internal server error"):
         super().__init__(status_code=500, message=message)
+
+class ValueError(AppException):
+    def __init__(self, message: str = "Invalid Value"):
+        super().__init__(status_code=400, message=message)
