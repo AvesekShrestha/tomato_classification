@@ -3,7 +3,7 @@ from config.database.index import Base
 from sqlalchemy.orm import Mapped, mapped_column 
 from sqlalchemy import Enum as SQLEnum
 from routes.v1.user.dto.user_role import UserRole
-
+from sqlalchemy.orm import relationship
 
 class User(Base) : 
 
@@ -15,4 +15,8 @@ class User(Base) :
     password : Mapped[str] = mapped_column(String(20))
     role : Mapped[UserRole] = mapped_column(SQLEnum(UserRole), default=UserRole.USER) 
 
+
+    posts=relationship("Post",back_populates="user")
+    comments=relationship("Comment",back_populates="user")
+    
 

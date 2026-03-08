@@ -4,13 +4,13 @@ from fastapi.responses import JSONResponse
 from config.database.index import initalize_database
 from utils.errors.index import AppException, NotFound
 from utils.response.index import ResponseModel
-from utils.models.model_loader import load_model
+# from utils.models.model_loader import load_model
 from routes.index import router
 
 @asynccontextmanager
 async def lifespan(app : FastAPI) :
     await initalize_database()
-    load_model()
+    # load_model()
     yield
 
 app = FastAPI(lifespan=lifespan)

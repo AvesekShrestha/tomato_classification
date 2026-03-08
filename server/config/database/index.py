@@ -14,6 +14,7 @@ async def get_db() :
 async def initalize_database():
     print("Hello from initalize database")
     async with engine.begin() as connection:
+        print("Hello testing..")
         await connection.run_sync(Base.metadata.create_all)
 
 
