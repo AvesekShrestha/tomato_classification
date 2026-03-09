@@ -3,9 +3,14 @@ from schemas.user import User
 from sqlalchemy.ext.asyncio import AsyncSession
 
 class AuthRepository: 
-
+   
     async def register(self, payload : RegisterRequest, db : AsyncSession) -> User: 
-        user = User(payload)
+        user = User(
+            username=payload.username,
+            email=payload.email,
+            password=payload.password,
+            role=payload.role
+        )
         db.add(user)
         await db.commit()
         await db.refresh(user)

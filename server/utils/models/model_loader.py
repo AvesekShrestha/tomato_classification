@@ -4,7 +4,7 @@ from utils.errors.index import InternalServerError
 from utils.models.index import NeuralNet
 
 
-file_path = Path(r"C:\Users\HP\OneDrive\Desktop\TOMAT_PROJECT\tomato_classification\model\tomato_state_dict.pth").resolve()
+file_path = Path("/home/avesek/Documents/workspace/collage/seventh/project/tomato_classification/model/tomato_state_dict.pth").resolve()
 model = None
 
 def load_model() : 

@@ -1,9 +1,21 @@
+from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from schemas.user import User
 from utils.errors.index import NotFound
 from sqlalchemy import select
+from typing import List
 
 class UserRepository: 
+
+    async def find_all(self, db: AsyncSession) -> List[User] :
+            statement = select(User)
+            result = await db.execute(statement)
+            users = result.scalars()._allrows()
+
+            if not users : 
+                raise NotFound("Users not found")
+
+            return users 
 
     async def find_by_id(self, user_id : int, db: AsyncSession) -> User :
         statement = select(User).where(User.id == user_id)
@@ -15,7 +27,7 @@ class UserRepository:
 
         return user
 
-    async def find_by_email(self, user_email : int, db: AsyncSession) -> User :
+    async def find_by_email(self, user_email : EmailStr, db: AsyncSession) -> User :
         statement = select(User).where(User.email == user_email)
         result = await db.execute(statement)
         user = result.scalar_one_or_none()

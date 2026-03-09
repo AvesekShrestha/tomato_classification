@@ -16,3 +16,4 @@ class RegisterRequest(BaseModel) :
         if len(value) < 8 : 
             raise ValueError("Password length should be greater than 8")
 
+        return value
