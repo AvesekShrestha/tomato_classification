@@ -1,4 +1,7 @@
 from datetime import datetime, timedelta
+
+from fastapi import Depends
+from config.database.index import get_db
 from routes.v1.auth.dto.login_request import LoginRequest
 from routes.v1.auth.dto.login_response import LoginResponse
 from routes.v1.auth.dto.register_request import RegisterRequest
@@ -11,10 +14,13 @@ from utils.tokens.token_type import AccessTokenPayload, TokenType
 from .auth_repository import AuthRepository
 from utils.password.index import check_password, hash_password
 from sqlalchemy.ext.asyncio import AsyncSession
-from utils.errors.index import TokenExpired, ValueError
+from utils.errors.index import BadRequest, InternalServerError, TokenExpired, ValueError, OTPExpired
 from utils.tokens.index import generate_access_token, generate_refresh_token
 from routes.v1.token.token_repository import TokenRepository
 from routes.v1.token.dto.index import TokenPayload
+from utils.otp.index import generate_otp
+from utils.mail.index import send_mail
+from routes.v1.auth.dto.otp import OTPRequest
 
 
 class AuthService: 
@@ -23,6 +29,33 @@ class AuthService:
         self.auth_repository = AuthRepository()
         self.user_repository = UserRepository()
         self.token_repository = TokenRepository()
+
+    async def resend_OTP(self, db : AsyncSession = Depends(get_db)) : 
+        pass
+
+
+    async def verify_OTP(self, user_id : int, payload : OTPRequest, db : AsyncSession)-> None :
+        user = await self.user_repository.find_by_id(user_id=user_id, db=db)
+
+        if not user.otp :
+            raise InternalServerError("OTP is not present")
+
+        if not user.otp_expires_at :
+            raise InternalServerError("OTP expired")
+
+        if user.otp_expires_at < datetime.now() : 
+            raise OTPExpired("OTP has been expired")
+
+        if user.otp != payload.otp : 
+            raise BadRequest("Invalid OTP")
+
+        user.is_verified = True
+        user.otp = None
+        user.otp_expires_at = None
+
+        await db.commit()
+
+        return None
 
     async def refresh(self, ref_token : str, db : AsyncSession) -> TokenResponse: 
 
@@ -58,16 +91,22 @@ class AuthService:
 
         hashed_password = hash_password(payload.password)
         payload = payload.model_copy(update={'password' : hashed_password})
+
         user = await self.auth_repository.register(payload, db)
+
+        otp : str = generate_otp()
+
+        await self.user_repository.updateOTP(user_id=user.id, otp=otp, db=db)
+        send_mail(otp, user.email)
 
         response : RegisterResponse = RegisterResponse(
             username=str(user.username),
             email=user.email,
             role=user.role
         )
+        await db.commit()
 
         return response
-
 
     async def login(self, payload : LoginRequest, db : AsyncSession) -> LoginResponse : 
 
