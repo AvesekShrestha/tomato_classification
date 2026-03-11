@@ -6,6 +6,7 @@ from routes.v1.user.dto.user_response import UserResponse
 from utils.errors.index import InternalServerError
 from utils.response.index import ResponseModel
 from .user_service import UserService
+from middlewares.auth_middleware import authenticate
 
 router = APIRouter()
 user_service = UserService()
@@ -17,7 +18,22 @@ async def get_all(db : AsyncSession = Depends(get_db)) -> ResponseModel[List[Use
         return ResponseModel[List[UserResponse]](success=True, data=response, message="User data feteched successfully")
 
     except Exception as e : 
-        error_message = e.args[0]
+        error_message = e.args[0] if e.args[0] else str(e)
+        raise InternalServerError(error_message)
+
+@router.get("/me", response_model=ResponseModel[UserResponse], response_model_exclude_none=True)
+async def me(db : AsyncSession = Depends(get_db), user_id = Depends(authenticate)) -> ResponseModel[UserResponse] : 
+
+    try : 
+        response = await user_service.me(user_id=user_id, db=db)
+        return ResponseModel[UserResponse](
+            success=True,
+            data=response,
+            message="User retrived successfully"
+        )
+        
+    except Exception as e :
+        error_message = e.args[0] if e.args[0] else str(e)
         raise InternalServerError(error_message)
 
 @router.get("/{user_id}")
@@ -27,5 +43,7 @@ async def get_by_id(user_id : int, db : AsyncSession = Depends(get_db)) -> Respo
         return ResponseModel[UserResponse](success=True, data=response, message="User data feteched successfully")
 
     except Exception as e : 
-        error_message = e.args[0]
+        error_message = e.args[0] if e.args[0] else str(e)
         raise InternalServerError(error_message)
+
+

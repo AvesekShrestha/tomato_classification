@@ -1,4 +1,6 @@
-from sqlalchemy import String
+from datetime import datetime
+from typing import Optional
+from sqlalchemy import Boolean, DateTime, String
 from config.database.index import Base
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Enum as SQLEnum
@@ -16,6 +18,9 @@ class User(Base) :
     email : Mapped[str] = mapped_column(String(90), unique=True)
     password : Mapped[str] = mapped_column(String(200))
     role : Mapped[UserRole] = mapped_column(SQLEnum(UserRole), default=UserRole.USER) 
+    is_verified : Mapped[bool] = mapped_column(Boolean, default=False)
+    otp : Mapped[Optional[str]] = mapped_column(String(6), default=None)
+    otp_expires_at : Mapped[Optional[datetime]] = mapped_column(DateTime)
 
 
     posts = relationship("Post", back_populates="user")

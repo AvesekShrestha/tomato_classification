@@ -1,11 +1,12 @@
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from contextlib import asynccontextmanager
 from fastapi.responses import JSONResponse
 from config.database.index import initalize_database
-from utils.errors.index import AppException, NotFound
+from utils.errors.index import AppException
 from utils.response.index import ResponseModel
 from utils.models.model_loader import load_model
 from routes.index import router
+from middlewares.auth_middleware import authenticate
 
 @asynccontextmanager
 async def lifespan(app : FastAPI) :
@@ -22,8 +23,10 @@ async def custom_exception_handler(request : Request, exception : AppException) 
    
 @app.get("/health")
 async def health() : 
-    a = 4
-    if  a < 5: raise NotFound("Resource not found")
     return {"message" : "Health of server is top nutch"}
+
+@app.get("/test")
+async def test(user_id : int = Depends(authenticate)) : 
+    return user_id
 
 app.include_router(router, prefix="/api")
