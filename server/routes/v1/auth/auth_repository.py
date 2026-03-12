@@ -11,6 +11,7 @@ class AuthRepository:
             password=payload.password,
             role=payload.role
         )
+        print(user)
         db.add(user)
         await db.flush()
         await db.refresh(user)
