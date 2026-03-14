@@ -35,9 +35,9 @@ async def resend_otp(payload : OTPRequest, db : AsyncSession = Depends(get_db)) 
         raise InternalServerError(error_message)
 
 @router.post("/verify-otp", response_model=ResponseModel[None], response_model_exclude_none=True)
-async def verifyOTP(payload : OTPRequest, db : AsyncSession = Depends(get_db), user_id : int = Depends(authenticate)) -> ResponseModel[None] :
+async def verifyOTP(payload : OTPRequest, db : AsyncSession = Depends(get_db)) -> ResponseModel[None] :
     
-    await auth_service.verify_OTP(user_id=user_id, payload=payload, db=db)
+    await auth_service.verify_OTP(payload=payload, db=db)
 
     return ResponseModel[None](
         success=True,
