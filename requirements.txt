@@ -61,8 +61,6 @@ SQLAlchemy==2.0.48
 starlette==0.52.1
 sympy==1.14.0
 tenacity==9.1.4
-torch==2.10.0+cpu
-torchvision==0.25.0+cpu
 typer==0.24.1
 typing-inspection==0.4.2
 typing_extensions==4.15.0
