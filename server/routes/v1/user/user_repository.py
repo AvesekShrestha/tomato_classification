@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from schemas.user import User
@@ -36,3 +37,13 @@ class UserRepository:
             raise NotFound("User not found")
 
         return user
+
+    async def updateOTP(self, user_id : int, otp : str, db : AsyncSession) :
+
+        user = await self.find_by_id(user_id, db)
+        user.otp = otp
+        user.otp_expires_at = datetime.now() + timedelta(minutes=5)
+
+        await db.flush()
+        await db.refresh(user)
+

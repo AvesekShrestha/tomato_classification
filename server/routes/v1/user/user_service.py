@@ -40,3 +40,7 @@ class UserService:
 
         return response
 
+    async def me(self, user_id : int, db : AsyncSession) -> UserResponse : 
+
+        user = await self.user_repository.find_by_id(user_id=user_id, db=db)
+        return user

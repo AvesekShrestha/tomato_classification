@@ -41,3 +41,8 @@ class ValueError(AppException):
 class TokenExpired(AppException):
     def __init__(self, message: str = "Token Expired"):
         super().__init__(status_code=400, message=message)
+
+class OTPExpired(AppException):
+    def __init__(self, message: str = "OTP Expired"):
+        super().__init__(status_code=400, message=message)
+
