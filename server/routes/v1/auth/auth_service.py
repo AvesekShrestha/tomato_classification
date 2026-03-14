@@ -41,8 +41,9 @@ class AuthService:
 
         await db.commit()
 
-    async def verify_OTP(self, user_id : int, payload : OTPRequest, db : AsyncSession)-> None :
-        user = await self.user_repository.find_by_id(user_id=user_id, db=db)
+    async def verify_OTP(self, payload : OTPRequest, db : AsyncSession)-> None :
+
+        user = await self.user_repository.find_by_email(user_email=payload.email, db=db)
 
         if not payload.otp :
             raise ValueError("OTP required for verfiying")

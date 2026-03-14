@@ -2,8 +2,8 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr
 
 class OTPRequest(BaseModel) : 
-    email : Optional[EmailStr] = None
-    otp : Optional[str] = None
+    email : EmailStr
+    otp : str
 
 class OTPResponse(BaseModel) : 
     otp : str
