@@ -9,8 +9,8 @@ class Post(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(200))
     content: Mapped[str] = mapped_column(String(500))
-    like: Mapped[int] = mapped_column(Integer)
-    dislike: Mapped[int] = mapped_column(Integer)
+    like: Mapped[int] = mapped_column(Integer, default=0)
+    dislike: Mapped[int] = mapped_column(Integer, default=0)
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id"),
         nullable=False
