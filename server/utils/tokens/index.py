@@ -9,8 +9,7 @@ def generate_access_token(payload : AccessTokenPayload) -> str :
     return encoded
 
 def decode_access_token(token : str) -> AccessTokenPayload:
-    print("Calling here")
-    try : 
+    try :
         decoded = jwt.decode(token, jwt_private_key, algorithms=["HS256"])
         return AccessTokenPayload.model_validate(decoded)
     except Exception as e : 

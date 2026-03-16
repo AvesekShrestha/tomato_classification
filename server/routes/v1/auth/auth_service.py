@@ -6,7 +6,6 @@ from routes.v1.auth.dto.login_response import LoginResponse
 from routes.v1.auth.dto.register_request import RegisterRequest
 from routes.v1.auth.dto.register_response import RegisterResponse
 from routes.v1.auth.dto.token_response import TokenResponse
-from routes.v1.token import token_repository
 from routes.v1.user.dto.user_response import UserResponse
 from routes.v1.user.user_repository import UserRepository
 from schemas.refresh_token import RefreshToken
@@ -79,7 +78,12 @@ class AuthService:
 
         await self.token_repository.delete_token(token, db)
 
-        access_token_payload : AccessTokenPayload = AccessTokenPayload(user_id=user_id, type=TokenType.ACCESS)
+        access_token_payload : AccessTokenPayload = AccessTokenPayload(
+            user_id=user_id,
+            type=TokenType.ACCESS,
+            iat=datetime.now(),
+            exp=datetime.now() + timedelta(minutes=5)
+        )
 
         access_token : str = generate_access_token(access_token_payload)
         refresh_token : str = generate_refresh_token()
@@ -129,7 +133,12 @@ class AuthService:
         
         user_response : UserResponse = UserResponse(username=user.username, email=user.email, role=user.role)
 
-        access_token_payload : AccessTokenPayload = AccessTokenPayload(user_id=user.id, type=TokenType.ACCESS)
+        access_token_payload : AccessTokenPayload = AccessTokenPayload(
+            user_id=user.id,
+            type=TokenType.ACCESS,
+            iat=datetime.now(),
+            exp=datetime.now() + timedelta(minutes=5)
+        )
 
         access_token = generate_access_token(access_token_payload)
         refresh_token = generate_refresh_token()

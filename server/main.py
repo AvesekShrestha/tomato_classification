@@ -7,6 +7,7 @@ from utils.response.index import ResponseModel
 from utils.models.model_loader import load_model
 from routes.index import router
 from middlewares.auth_middleware import authenticate
+import schemas
 
 @asynccontextmanager
 async def lifespan(app : FastAPI) :

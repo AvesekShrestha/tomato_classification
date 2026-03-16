@@ -6,8 +6,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Enum as SQLEnum
 from routes.v1.user.dto.user_role import UserRole
 from sqlalchemy.orm import relationship
-from schemas.post import Post
-from schemas.comment import Comment
 
 class User(Base) : 
 

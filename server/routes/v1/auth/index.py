@@ -9,7 +9,6 @@ from routes.v1.auth.dto.register_request import RegisterRequest
 from config.database.index import get_db
 from routes.v1.auth.dto.register_response import RegisterResponse
 from routes.v1.auth.dto.token_response import TokenResponse
-from routes.v1.token import token_repository
 from utils.errors.index import InternalServerError
 from utils.response.index import ResponseModel 
 from .auth_service import AuthService
@@ -23,7 +22,7 @@ auth_service = AuthService()
 @router.post("/resend-otp", response_model=ResponseModel[OTPResponse], response_model_exclude_none=True)
 async def resend_otp(payload : OTPRequest, db : AsyncSession = Depends(get_db)) -> ResponseModel[OTPResponse] :
 
-    try: 
+    try:
         response = await auth_service.resend_OTP(payload=payload, db=db)
         return ResponseModel[OTPResponse](
             success=True,
