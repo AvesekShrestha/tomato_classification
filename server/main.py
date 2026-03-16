@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, Request
 from contextlib import asynccontextmanager
 from fastapi.responses import JSONResponse
 from config.database.index import initalize_database
@@ -20,6 +20,7 @@ app = FastAPI(lifespan=lifespan)
 @app.exception_handler(AppException)
 async def custom_exception_handler(request : Request, exception : AppException) :
     content = ResponseModel(success=False, data=None, message=exception.detail)
+    print(exception.status_code)
     return JSONResponse(status_code=exception.status_code, content=content.model_dump())
    
 @app.get("/health")
@@ -27,7 +28,8 @@ async def health() :
     return {"message" : "Health of server is top nutch"}
 
 @app.get("/test")
-async def test(user_id : int = Depends(authenticate)) : 
-    return user_id
+async def test(background_task : BackgroundTasks ):
+    print(background_task)
+    return 1
 
 app.include_router(router, prefix="/api")

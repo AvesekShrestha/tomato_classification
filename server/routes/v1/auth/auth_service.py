@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta
-from fastapi import Depends
+from datetime import datetime, timedelta, timezone
+from fastapi import Depends, BackgroundTasks
 from config.database.index import get_db
 from routes.v1.auth.dto.login_request import LoginRequest
 from routes.v1.auth.dto.login_response import LoginResponse
@@ -28,14 +28,16 @@ class AuthService:
         self.user_repository = UserRepository()
         self.token_repository = TokenRepository()
 
-    async def resend_OTP(self, payload : OTPRequest, db : AsyncSession = Depends(get_db)) : 
+    async def resend_OTP(self, payload : OTPRequest, background_task : BackgroundTasks, db : AsyncSession = Depends(get_db)) :
 
         if not payload.email : 
             raise ValueError("Email address is required for resending otp")
 
         user = await self.user_repository.find_by_email(user_email=payload.email, db=db)
         otp = generate_otp()
-        send_mail(otp=otp, to=payload.email)
+
+        # send_mail(otp=otp, to=payload.email)
+        background_task.add_task(send_mail, otp, payload.email)
         user.otp = otp
 
         await db.commit()
@@ -70,19 +72,19 @@ class AuthService:
     async def refresh(self, ref_token : str, db : AsyncSession) -> TokenResponse: 
 
         token = await self.token_repository.find_by_token(ref_token, db)
-        
+        now = datetime.now(timezone.utc)
+
         if token.expires_at < datetime.now() : 
             raise TokenExpired("Refresh token has been expired")
-
-        user_id = token.user_id
 
         await self.token_repository.delete_token(token, db)
 
         access_token_payload : AccessTokenPayload = AccessTokenPayload(
-            user_id=user_id,
+            user_id=token.user.id,
+            role=token.user.role,
             type=TokenType.ACCESS,
-            iat=datetime.now(),
-            exp=datetime.now() + timedelta(minutes=5)
+            iat=int(now.timestamp()),
+            exp=int((now + timedelta(minutes=5)).timestamp())
         )
 
         access_token : str = generate_access_token(access_token_payload)
@@ -90,7 +92,7 @@ class AuthService:
 
         payload : RefreshToken = RefreshToken(
             token=refresh_token,
-            user_id=user_id,
+            user_id=token.user_id,
             expires_at=datetime.now() + timedelta(days=7)
         )
 
@@ -100,9 +102,11 @@ class AuthService:
             access_token=access_token,
             refresh_token=refresh_token
         )
+        await db.commit()
+
         return tokens
 
-    async def register(self, payload : RegisterRequest, db : AsyncSession) -> RegisterResponse :
+    async def register(self, payload : RegisterRequest, background_task : BackgroundTasks, db : AsyncSession) -> RegisterResponse :
 
         hashed_password = hash_password(payload.password)
         payload = payload.model_copy(update={'password' : hashed_password})
@@ -112,7 +116,8 @@ class AuthService:
         otp : str = generate_otp()
 
         await self.user_repository.updateOTP(user_id=user.id, otp=otp, db=db)
-        send_mail(otp, user.email)
+        background_task.add_task(send_mail, otp, user.email)
+        # send_mail(otp, user.email)
 
         response : RegisterResponse = RegisterResponse(
             username=str(user.username),
@@ -127,6 +132,7 @@ class AuthService:
 
         user = await self.user_repository.find_by_email(payload.email, db)
         valid_password = check_password(user.password, payload.password)
+        now = datetime.now(timezone.utc)
 
         if not valid_password : 
             raise ValueError("Invalid passowrd")
@@ -135,14 +141,13 @@ class AuthService:
 
         access_token_payload : AccessTokenPayload = AccessTokenPayload(
             user_id=user.id,
+            role=user.role,
             type=TokenType.ACCESS,
-            iat=datetime.now(),
-            exp=datetime.now() + timedelta(minutes=5)
+            iat=int(now.timestamp()),
+            exp=int((now + timedelta(minutes=5)).timestamp())
         )
-
         access_token = generate_access_token(access_token_payload)
         refresh_token = generate_refresh_token()
-
 
         refresh_token_payload : TokenPayload = TokenPayload(
             token=refresh_token,
@@ -153,11 +158,13 @@ class AuthService:
         tokens : TokenResponse = TokenResponse(access_token=access_token, refresh_token=refresh_token)
         response : LoginResponse = LoginResponse(user=user_response, tokens=tokens)
 
+        await db.commit()
         return response
 
     async def logout(self, user_id : int, db : AsyncSession) -> None :
 
         await self.token_repository.delete_by_user_id(user_id=user_id, db=db)
+        await db.commit()
         return None
         
 

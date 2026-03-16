@@ -1,6 +1,6 @@
-from datetime import datetime
 from pydantic import BaseModel
 from enum import Enum
+from schemas.user import UserRole
 
 class TokenType(str, Enum) : 
     ACCESS = "access"
@@ -8,6 +8,7 @@ class TokenType(str, Enum) :
 
 class AccessTokenPayload(BaseModel) : 
     user_id : int
+    role : UserRole
     type : TokenType = TokenType.ACCESS
-    iat : datetime
-    exp : datetime
+    iat : int 
+    exp : int  
