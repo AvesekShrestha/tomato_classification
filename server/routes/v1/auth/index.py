@@ -43,8 +43,8 @@ async def verifyOTP(payload : OTPRequest, db : AsyncSession = Depends(get_db)) -
         message="OTP verified successfully"
     )
 
-@router.post("/refresh", response_model_exclude_none=True, response_model=ResponseModel[TokenResponse])
-async def refresh(request : Request, response : Response, db : AsyncSession = Depends(get_db)) -> ResponseModel[TokenResponse]: 
+@router.post("/refresh", response_model_exclude_none=True, response_model=ResponseModel[None])
+async def refresh(request : Request, response : Response, db : AsyncSession = Depends(get_db)) -> ResponseModel[None]: 
 
     token = request.cookies.get("refreshToken")
     if not token:
@@ -55,15 +55,13 @@ async def refresh(request : Request, response : Response, db : AsyncSession = De
         raise ValueError("Refresh Token is not generated")
 
     response.set_cookie("refreshToken", res.refresh_token, samesite="lax", httponly=True)
+    response.set_cookie("accessToken", res.access_token, samesite="lax", httponly=True)
 
-    tokens : TokenResponse = res.model_copy(update={"refresh_token" : None})
-    
-    return ResponseModel[TokenResponse](
+    return ResponseModel[None](
         success=True,
-        data=tokens,
+        data=None,
         message="Refreshed successfully"
     )
-
 
 @router.post("/register", response_model_exclude_none=True, response_model=ResponseModel[RegisterResponse])
 async def register(payload : RegisterRequest, background_task : BackgroundTasks, db : AsyncSession = Depends(get_db)) -> ResponseModel[RegisterResponse]: 
