@@ -39,6 +39,7 @@ class PostRepository :
         post : Post = Post(
             title=payload.title,
             content=payload.content,
+            image=payload.image_path,
             user_id=user_id
         )
 

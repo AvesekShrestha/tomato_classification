@@ -9,6 +9,7 @@ class Post(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(200))
     content: Mapped[str] = mapped_column(String(500))
+    image: Mapped[str] = mapped_column(String(100), nullable=True)
     like: Mapped[int] = mapped_column(Integer, default=0)
     dislike: Mapped[int] = mapped_column(Integer, default=0)
     user_id: Mapped[int] = mapped_column(

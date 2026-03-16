@@ -1,12 +1,9 @@
-from fastapi import APIRouter, Depends, Response 
-from sqlalchemy import exc
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.database.index import get_db
 from middlewares.auth_middleware import authenticate
-from routes.v1.post import post_repository
 from routes.v1.post.dto.post_request import PostRequest
 from routes.v1.post.dto.post_response import PostResponse
-from utils import response
 from .post_service import PostService
 from utils.response.index import ResponseModel
 from typing import List
@@ -43,8 +40,13 @@ async def find_by_id(post_id : int, db : AsyncSession = Depends(get_db)) -> Resp
         raise e
 
 @router.post("/", response_model=ResponseModel[PostResponse] , response_model_exclude_none=True)
-async def create(payload : PostRequest, user_id : int = Depends(authenticate), db : AsyncSession = Depends(get_db)) -> ResponseModel[PostResponse] : 
+async def create(title : str = Form(...), content : str = Form(...), image : UploadFile = File(None), user_id : int = Depends(authenticate), db : AsyncSession = Depends(get_db)) -> ResponseModel[PostResponse] : 
     try : 
+        payload : PostRequest = PostRequest(
+            title=title,
+            content=content,
+            image=image
+        )
         response : PostResponse = await post_service.create(payload=payload, user_id=user_id, db=db)
         return ResponseModel[PostResponse](
             success=True,
