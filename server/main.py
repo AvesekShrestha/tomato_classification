@@ -6,8 +6,9 @@ from utils.errors.index import AppException
 from utils.response.index import ResponseModel
 from utils.models.model_loader import load_model
 from routes.index import router
-from middlewares.auth_middleware import authenticate
 import schemas
+from fastapi.staticfiles import StaticFiles
+
 
 @asynccontextmanager
 async def lifespan(app : FastAPI) :
@@ -33,3 +34,4 @@ async def test(background_task : BackgroundTasks ):
     return 1
 
 app.include_router(router, prefix="/api")
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
