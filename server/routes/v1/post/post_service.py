@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from operator import pos
 from routes.v1.post.dto.post_response import PostResponse
 from routes.v1.post.dto.post_request import PostRequest
 from schemas.post import Post
@@ -26,11 +27,33 @@ class PostService :
                 content=post.content,
                 like=post.like,
                 dislike=post.dislike,
-                image=post.image
+                image=post.image,
+                user=post.user,
+                create_at=post.created_at
             )
             for post in posts
         ]
         await db.commit()
+        return response
+
+    async def find_by_user_id(self, user_id : int, db : AsyncSession) -> List[PostResponse] :
+        posts : List[Post] = await self.post_repository.find_by_user_id(user_id=user_id, db=db)
+
+        response : List[PostResponse] = [
+            PostResponse(
+
+                id=post.id,
+                title=post.title,
+                content=post.content,
+                like=post.like,
+                dislike=post.dislike,
+                image=post.image,
+                user=post.user,
+                create_at=post.created_at
+            )
+            for post in posts
+        ]
+
         return response
 
     async def find_by_id(self, post_id : int, db : AsyncSession) -> PostResponse : 
@@ -43,7 +66,10 @@ class PostService :
             content=post.content,
             like=post.like,
             dislike=post.dislike,
-            image=post.image
+            image=post.image,
+            user=post.user,
+            create_at=post.created_at
+
         )
         await db.commit()
         return response
@@ -69,7 +95,10 @@ class PostService :
             content=post.content,
             like=post.like,
             dislike=post.dislike,
-            image=post.image
+            image=post.image,
+            user=post.user,
+            create_at=post.created_at
+
         )
 
         await db.commit()

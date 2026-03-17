@@ -12,6 +12,23 @@ from typing import List
 router =  APIRouter()
 post_service = PostService()
 
+@router.get("/user", response_model=ResponseModel[List[PostResponse]], response_model_exclude_none=True)
+async def find_by_user_id(user_id : int = Depends(authenticate), db : AsyncSession = Depends(get_db)) -> ResponseModel[List[PostResponse]] : 
+
+    print(user_id, type(user_id))
+    
+    try:
+        response : List[PostResponse] = await post_service.find_by_user_id(user_id=user_id, db=db)
+        return ResponseModel[List[PostResponse]](
+            success=True,
+            data=response,
+            message="Post data retrived successfully"
+        )
+    except Exception as e : 
+        raise e
+
+
+
 @router.get("/", response_model=ResponseModel[List[PostResponse]], response_model_exclude_none=True)
 async def find_all(db : AsyncSession = Depends(get_db)) -> ResponseModel[List[PostResponse]] : 
     try :
@@ -38,6 +55,7 @@ async def find_by_id(post_id : int, db : AsyncSession = Depends(get_db)) -> Resp
         )
     except Exception as e : 
         raise e
+
 
 @router.post("/", response_model=ResponseModel[PostResponse] , response_model_exclude_none=True)
 async def create(title : str = Form(...), content : str = Form(...), image : UploadFile = File(None), user_id : int = Depends(authenticate), db : AsyncSession = Depends(get_db)) -> ResponseModel[PostResponse] : 
