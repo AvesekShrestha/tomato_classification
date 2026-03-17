@@ -1,10 +1,12 @@
+from datetime import datetime
+from operator import pos
 from sqlalchemy.orm import selectinload
 from routes.v1.post.dto.post_request import PostRequest
 from schemas.post import Post
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
-
+from routes.v1.post.dto.post_update import PostUpdate 
 from utils.errors.index import NotFound
 
 class PostRepository : 
@@ -68,3 +70,42 @@ class PostRepository :
         await db.flush()
 
         return None
+
+    async def update(self, payload : PostUpdate, post_id : int, db : AsyncSession) -> Post : 
+        post : Post = await self.find_by_id(post_id=post_id, db=db)
+
+        update_data = payload.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(post, key, value)
+
+        post.updated_at = datetime.now()
+
+        db.add(post)
+        await db.flush()
+        await db.refresh(post)
+
+        return post
+
+    async def like(self, post_id : int, db : AsyncSession) -> Post :
+
+        post : Post = await self.find_by_id(post_id=post_id, db=db)
+
+        post.like += 1
+
+        db.add(post)
+        await db.flush()
+        await db.refresh(post)
+
+        return post
+
+    async def dislike(self, post_id : int, db : AsyncSession) -> Post :
+
+        post : Post = await self.find_by_id(post_id=post_id, db=db)
+
+        post.dislike += 1
+
+        db.add(post)
+        await db.flush()
+        await db.refresh(post)
+
+        return post

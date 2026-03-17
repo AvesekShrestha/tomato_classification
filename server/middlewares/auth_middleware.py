@@ -4,7 +4,7 @@ from utils.tokens.token_type import AccessTokenPayload
 from utils.tokens.index import decode_access_token
 
 
-def authenticate(request : Request) -> int : 
+def current_user_id(request : Request) -> int : 
 
     try : 
         access_token = request.cookies.get("accessToken")
@@ -17,3 +17,17 @@ def authenticate(request : Request) -> int :
 
     except Exception as e: 
         raise e
+
+def authenticate(request : Request) -> None : 
+
+    try :
+        access_token = request.cookies.get("accessToken")
+
+        if not access_token : 
+            raise Unauthorized("Access token is not present")
+
+        decode_access_token(access_token)
+
+    except Exception as e: 
+        raise e
+

@@ -1,4 +1,4 @@
-from fastapi import BackgroundTasks, Depends, FastAPI, Request
+from fastapi import BackgroundTasks, FastAPI, Request
 from contextlib import asynccontextmanager
 from fastapi.responses import JSONResponse
 from config.database.index import initalize_database
@@ -21,7 +21,6 @@ app = FastAPI(lifespan=lifespan)
 @app.exception_handler(AppException)
 async def custom_exception_handler(request : Request, exception : AppException) :
     content = ResponseModel(success=False, data=None, message=exception.detail)
-    print(exception.status_code)
     return JSONResponse(status_code=exception.status_code, content=content.model_dump())
    
 @app.get("/health")
