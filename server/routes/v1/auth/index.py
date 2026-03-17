@@ -1,6 +1,6 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from middlewares.auth_middleware import authenticate
+from middlewares.auth_middleware import current_user_id
 from routes.v1.auth.dto.login_request import LoginRequest
 from routes.v1.auth.dto.login_response import LoginResponse
 from routes.v1.auth.dto.otp import OTPRequest, OTPResponse
@@ -118,7 +118,7 @@ async def login(res : Response, payload : LoginRequest, db:AsyncSession = Depend
         raise InternalServerError(error_message)
 
 @router.post("/logout", response_model_exclude_none=True, response_model=ResponseModel[None])
-async def logout(response : Response, db : AsyncSession = Depends(get_db), user_id : int = Depends(authenticate)) -> ResponseModel[None] :
+async def logout(response : Response, db : AsyncSession = Depends(get_db), user_id : int = Depends(current_user_id)) -> ResponseModel[None] :
     try:
         response.delete_cookie(
             key="refreshToken",

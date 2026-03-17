@@ -2,7 +2,9 @@ from datetime import datetime, timezone
 from operator import pos
 from routes.v1.post.dto.post_response import PostResponse
 from routes.v1.post.dto.post_request import PostRequest
+from routes.v1.post.dto.post_update import PostUpdate
 from schemas.post import Post
+from utils.errors.index import BadRequest
 from .post_repository import PostRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
@@ -104,6 +106,23 @@ class PostService :
         await db.commit()
         return response
 
+    async def update(self, payload : PostUpdate, post_id : int, db : AsyncSession) -> PostResponse : 
+
+        post : Post = await self.post_repository.update(payload, post_id=post_id, db=db)
+        response : PostResponse = PostResponse(
+            id=post.id,
+            title=post.title,
+            content=post.content,
+            like=post.like,
+            dislike=post.dislike,
+            image=post.image,
+            user=post.user,
+            create_at=post.created_at
+        )
+
+        await db.commit()
+        return response
+
     async def delete(self, post_id : int, db : AsyncSession) -> None : 
 
         await self.post_repository.delete(post_id=post_id, db=db)
@@ -112,3 +131,39 @@ class PostService :
         return None
 
 
+    async def like(self, post_id : int, db : AsyncSession) -> PostResponse : 
+        post : Post = await self.post_repository.like(post_id=post_id, db=db)
+
+        response : PostResponse = PostResponse(
+            id=post.id,
+            title=post.title,
+            content=post.content,
+            like=post.like,
+            dislike=post.dislike,
+            image=post.image,
+            user=post.user,
+            create_at=post.created_at
+        )
+
+        await db.commit()
+
+        return response 
+
+
+    async def dislike(self, post_id : int, db : AsyncSession) -> PostResponse : 
+        post : Post = await self.post_repository.dislike(post_id=post_id, db=db)
+
+        response : PostResponse = PostResponse(
+            id=post.id,
+            title=post.title,
+            content=post.content,
+            like=post.like,
+            dislike=post.dislike,
+            image=post.image,
+            user=post.user,
+            create_at=post.created_at
+        )
+
+        await db.commit()
+
+        return response 

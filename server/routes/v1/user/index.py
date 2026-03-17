@@ -6,7 +6,7 @@ from routes.v1.user.dto.user_response import UserResponse
 from utils.errors.index import InternalServerError
 from utils.response.index import ResponseModel
 from .user_service import UserService
-from middlewares.auth_middleware import authenticate
+from middlewares.auth_middleware import current_user_id
 
 router = APIRouter()
 user_service = UserService()
@@ -22,7 +22,7 @@ async def get_all(db : AsyncSession = Depends(get_db)) -> ResponseModel[List[Use
         raise InternalServerError(error_message)
 
 @router.get("/me", response_model=ResponseModel[UserResponse], response_model_exclude_none=True)
-async def me(db : AsyncSession = Depends(get_db), user_id = Depends(authenticate)) -> ResponseModel[UserResponse] : 
+async def me(db : AsyncSession = Depends(get_db), user_id = Depends(current_user_id)) -> ResponseModel[UserResponse] : 
 
     try : 
         response = await user_service.me(user_id=user_id, db=db)
