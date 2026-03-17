@@ -1,3 +1,4 @@
+from sqlalchemy.orm import selectinload
 from routes.v1.post.dto.post_request import PostRequest
 from schemas.post import Post
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +14,7 @@ class PostRepository :
 
     async def find_all(self, db : AsyncSession) -> List[Post] : 
 
-        statement = select(Post)
+        statement = select(Post).options(selectinload(Post.user))
         result = await db.execute(statement=statement)
         posts = result.scalars()._allrows()
 
@@ -23,9 +24,20 @@ class PostRepository :
 
         return posts
 
+    async def find_by_user_id(self, user_id : int, db : AsyncSession) -> List[Post] : 
+
+        statement = select(Post).options(selectinload(Post.user)).where(Post.user_id == user_id)
+        result = await db.execute(statement=statement)
+        posts = result.scalars()._allrows()
+
+        if not posts : 
+            raise NotFound("No post")
+
+        return posts
+
     async def find_by_id(self, post_id : int, db : AsyncSession) -> Post : 
 
-        statement = select(Post).where(Post.id == post_id)
+        statement = select(Post).options(selectinload(Post.user)).where(Post.id == post_id)
         result = await db.execute(statement=statement)
         post = result.scalar_one_or_none()
 
