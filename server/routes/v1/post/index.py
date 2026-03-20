@@ -63,7 +63,7 @@ async def find_by_id(post_id : int, db : AsyncSession = Depends(get_db)) -> Resp
 
 @router.post("/", response_model=ResponseModel[PostResponse] , response_model_exclude_none=True)
 async def create(title : str = Form(...), content : str = Form(...), image : UploadFile = File(None), user_id : int = Depends(current_user_id), db : AsyncSession = Depends(get_db)) -> ResponseModel[PostResponse] : 
-    try : 
+    try :
         payload : PostRequest = PostRequest(
             title=title,
             content=content,
@@ -81,9 +81,9 @@ async def create(title : str = Form(...), content : str = Form(...), image : Upl
         raise InternalServerError(error_message)
 
 @router.post("/{post_id}/like", response_model_exclude_none=True, response_model=ResponseModel[PostResponse])
-async def like(post_id : int, db : AsyncSession = Depends(get_db)) -> ResponseModel[PostResponse] : 
+async def like(post_id : int, user_id : int = Depends(current_user_id), db : AsyncSession = Depends(get_db)) -> ResponseModel[PostResponse] : 
     try : 
-        response : PostResponse = await post_service.like(post_id=post_id, db=db)
+        response : PostResponse = await post_service.like(post_id=post_id, user_id=user_id, db=db)
         return ResponseModel[PostResponse](
             success=True,
             data=response,
@@ -95,9 +95,9 @@ async def like(post_id : int, db : AsyncSession = Depends(get_db)) -> ResponseMo
         raise InternalServerError(error_message)
 
 @router.post("/{post_id}/dislike", response_model_exclude_none=True, response_model=ResponseModel[PostResponse])
-async def dislike(post_id : int, db : AsyncSession = Depends(get_db)) -> ResponseModel[PostResponse] : 
+async def dislike(post_id : int, user_id : int = Depends(current_user_id), db : AsyncSession = Depends(get_db)) -> ResponseModel[PostResponse] : 
     try : 
-        response : PostResponse = await post_service.dislike(post_id=post_id, db=db)
+        response : PostResponse = await post_service.dislike(post_id=post_id, user_id=user_id, db=db)
         return ResponseModel[PostResponse](
             success=True,
             data=response,

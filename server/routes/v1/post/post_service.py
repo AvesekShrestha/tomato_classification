@@ -1,11 +1,12 @@
 from datetime import datetime, timezone
-from operator import pos
 from routes.v1.post.dto.post_response import PostResponse
 from routes.v1.post.dto.post_request import PostRequest
 from routes.v1.post.dto.post_update import PostUpdate
+from routes.v1.post.reaction.dto.reaction_request import ReactionRequest
 from schemas.post import Post
-from utils.errors.index import BadRequest
+from schemas.reaction import TargetType
 from .post_repository import PostRepository
+from .reaction.reaction_service import ReactionService 
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from pathlib import Path
@@ -15,6 +16,7 @@ class PostService :
 
     def __init__(self) : 
         self.post_repository = PostRepository()
+        self.reaction_service = ReactionService()
         self.uploads = Path("uploads")
         self.uploads.mkdir(exist_ok=True)
 
@@ -79,7 +81,7 @@ class PostService :
     async def create(self, payload : PostRequest, user_id : int, db : AsyncSession) -> PostResponse :
 
         modified_payload : PostRequest = payload
-        if payload.image : 
+        if payload.image :
 
             filename : str = f"{int(datetime.now(timezone.utc).timestamp())}_{payload.image.filename}"
             path = self.uploads / filename
@@ -98,9 +100,7 @@ class PostService :
             like=post.like,
             dislike=post.dislike,
             image=post.image,
-            user=post.user,
             create_at=post.created_at
-
         )
 
         await db.commit()
@@ -131,39 +131,26 @@ class PostService :
         return None
 
 
-    async def like(self, post_id : int, db : AsyncSession) -> PostResponse : 
-        post : Post = await self.post_repository.like(post_id=post_id, db=db)
+    async def like(self, post_id : int, user_id : int, db : AsyncSession) -> PostResponse : 
 
-        response : PostResponse = PostResponse(
-            id=post.id,
-            title=post.title,
-            content=post.content,
-            like=post.like,
-            dislike=post.dislike,
-            image=post.image,
-            user=post.user,
-            create_at=post.created_at
+        payload : ReactionRequest = ReactionRequest(
+            is_like=True,
+            target_id=post_id,
+            target_type=TargetType.POST
         )
-
+        post : PostResponse = await self.reaction_service.toggle_post_reaction(payload=payload, user_id=user_id, db=db)
         await db.commit()
 
-        return response 
+        return post
 
+    async def dislike(self, post_id : int, user_id : int, db : AsyncSession) -> PostResponse : 
 
-    async def dislike(self, post_id : int, db : AsyncSession) -> PostResponse : 
-        post : Post = await self.post_repository.dislike(post_id=post_id, db=db)
-
-        response : PostResponse = PostResponse(
-            id=post.id,
-            title=post.title,
-            content=post.content,
-            like=post.like,
-            dislike=post.dislike,
-            image=post.image,
-            user=post.user,
-            create_at=post.created_at
+        payload : ReactionRequest = ReactionRequest(
+            is_like=False,
+            target_id=post_id,
+            target_type=TargetType.POST
         )
-
+        post : PostResponse = await self.reaction_service.toggle_post_reaction(payload=payload, user_id=user_id, db=db)
         await db.commit()
 
-        return response 
+        return post

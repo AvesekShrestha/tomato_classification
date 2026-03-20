@@ -12,7 +12,7 @@ class PostResponse(BaseModel) :
     dislike : int
     image : Optional[str] = None
     create_at : datetime
-    user : UserResponse
+    user : Optional[UserResponse] = None
 
     model_config = ConfigDict(
             from_attributes=True,

@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from sqlalchemy.engine import result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -13,14 +14,14 @@ class CommentRepository :
 
     async def find_by_post_id(self, post_id : int, db : AsyncSession) -> List[Comment]:
  
-        statement = select(Comment).options(selectinload(Comment.user)).where(Comment.post_id == post_id)
+        statement = select(Comment).options(selectinload(Comment.user)).where(Comment.post_id == post_id, Comment.parent_id == None)
         result = await db.execute(statement=statement)
-        comments = result.scalars()._allrows()
+        comments = result.scalars().all()
 
         if not comments : 
             raise NotFound("No comments found")
 
-        return comments
+        return list(comments) 
 
     async def find_by_id(self, comment_id : int, db : AsyncSession) -> Comment : 
         
@@ -79,3 +80,31 @@ class CommentRepository :
         await db.refresh(comment)
 
         return comment 
+
+    async def reply(self, payload : CommentRequest, post_id : int, comment_id : int, user_id : int, db : AsyncSession) -> Comment :
+
+        reply : Comment = Comment(
+            content=payload.content,
+            user_id=user_id,
+            post_id=post_id,
+            parent_id=comment_id,
+            updated_at=datetime.now()
+        )
+
+        db.add(reply)
+        await db.flush()
+        await db.refresh(reply)
+
+        return reply
+
+    async def get_reply(self, comment_id : int, db : AsyncSession) -> List[Comment] :
+
+        statement = select(Comment).options(selectinload(Comment.replies)).where(Comment.parent_id == comment_id)
+        result = await db.execute(statement=statement)
+        replies = result.scalars().all()
+
+        if not replies : 
+            raise NotFound("No replies")
+
+        return list(replies)
+
