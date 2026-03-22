@@ -1,41 +1,52 @@
 from datetime import datetime
-from operator import pos
 from sqlalchemy.orm import selectinload
 from routes.v1.post.dto.post_request import PostRequest
 from schemas.post import Post
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import desc, select
 from typing import List
 from routes.v1.post.dto.post_update import PostUpdate 
 from utils.errors.index import NotFound
+import base64
 
 class PostRepository : 
 
     def __init__(self) : 
         pass
 
-    async def find_all(self, db : AsyncSession) -> List[Post] : 
+    async def find_all(self, limit : int, cursor : str | None, db : AsyncSession) -> List[Post] : 
 
-        statement = select(Post).options(selectinload(Post.user))
+        statement = select(Post).options(selectinload(Post.user)).order_by(desc(Post.created_at)).limit(limit=limit+1)
+
+        if cursor : 
+            last_date_str : str = base64.urlsafe_b64decode(cursor.encode()).decode()
+            last_date : datetime = datetime.fromisoformat(last_date_str)
+            statement = statement.where(Post.created_at < last_date)
+
         result = await db.execute(statement=statement)
-        posts = result.scalars()._allrows()
+        posts = result.scalars().all()
 
         if not posts : 
-
             raise NotFound("Posts not found")
 
-        return posts
+        return list(posts)
 
-    async def find_by_user_id(self, user_id : int, db : AsyncSession) -> List[Post] : 
+    async def find_by_user_id(self, limit : int, cursor : str | None, user_id : int, db : AsyncSession) -> List[Post] : 
 
-        statement = select(Post).options(selectinload(Post.user)).where(Post.user_id == user_id)
+        statement = select(Post).options(selectinload(Post.user)).where(Post.user_id == user_id).order_by(desc(Post.created_at)).limit(limit=limit + 1)
+
+        if cursor : 
+            last_date_str : str = base64.urlsafe_b64decode(cursor.encode()).decode()
+            last_date : datetime = datetime.fromisoformat(last_date_str)
+            statement = statement.where(Post.created_at < last_date)
+           
         result = await db.execute(statement=statement)
-        posts = result.scalars()._allrows()
+        posts = result.scalars().all()
 
         if not posts : 
             raise NotFound("No post")
 
-        return posts
+        return list(posts)
 
     async def find_by_id(self, post_id : int, db : AsyncSession) -> Post : 
 

@@ -9,6 +9,7 @@ from routes.v1.auth.dto.token_response import TokenResponse
 from routes.v1.user.dto.user_response import UserResponse
 from routes.v1.user.user_repository import UserRepository
 from schemas.refresh_token import RefreshToken
+from utils.response.index import ResponseModel
 from utils.tokens.token_type import AccessTokenPayload, TokenType
 from .auth_repository import AuthRepository
 from utils.password.index import check_password, hash_password
@@ -28,7 +29,7 @@ class AuthService:
         self.user_repository = UserRepository()
         self.token_repository = TokenRepository()
 
-    async def resend_OTP(self, payload : OTPRequest, background_task : BackgroundTasks, db : AsyncSession = Depends(get_db)) :
+    async def resend_OTP(self, payload : OTPRequest, background_task : BackgroundTasks, db : AsyncSession = Depends(get_db)) -> ResponseModel[None] :
 
         if not payload.email : 
             raise ValueError("Email address is required for resending otp")
@@ -36,13 +37,18 @@ class AuthService:
         user = await self.user_repository.find_by_email(user_email=payload.email, db=db)
         otp = generate_otp()
 
-        # send_mail(otp=otp, to=payload.email)
         background_task.add_task(send_mail, otp, payload.email)
         user.otp = otp
 
+        response : ResponseModel[None] = ResponseModel(
+            success=True,
+            data=None,
+            message="OTP has been resent successfully"
+        )
         await db.commit()
+        return response
 
-    async def verify_OTP(self, payload : OTPRequest, db : AsyncSession)-> None :
+    async def verify_OTP(self, payload : OTPRequest, db : AsyncSession)-> ResponseModel[None] :
 
         user = await self.user_repository.find_by_email(user_email=payload.email, db=db)
 
@@ -65,11 +71,15 @@ class AuthService:
         user.otp = None
         user.otp_expires_at = None
 
+        response : ResponseModel[None] = ResponseModel(
+            success=True,
+            data=None,
+            message="OTP verified successfully"        
+        )
         await db.commit()
+        return response
 
-        return None
-
-    async def refresh(self, ref_token : str, db : AsyncSession) -> TokenResponse: 
+    async def refresh(self, ref_token : str, db : AsyncSession) -> ResponseModel[TokenResponse]: 
 
         token = await self.token_repository.find_by_token(ref_token, db)
         now = datetime.now(timezone.utc)
@@ -102,11 +112,17 @@ class AuthService:
             access_token=access_token,
             refresh_token=refresh_token
         )
+
+        response : ResponseModel[TokenResponse] = ResponseModel(
+            success=True,
+            data=tokens,
+            message="Refreshed successfully"
+        )
         await db.commit()
 
-        return tokens
+        return response 
 
-    async def register(self, payload : RegisterRequest, background_task : BackgroundTasks, db : AsyncSession) -> RegisterResponse :
+    async def register(self, payload : RegisterRequest, background_task : BackgroundTasks, db : AsyncSession) -> ResponseModel[RegisterResponse] :
 
         hashed_password = hash_password(payload.password)
         payload = payload.model_copy(update={'password' : hashed_password})
@@ -117,18 +133,20 @@ class AuthService:
 
         await self.user_repository.updateOTP(user_id=user.id, otp=otp, db=db)
         background_task.add_task(send_mail, otp, user.email)
-        # send_mail(otp, user.email)
 
-        response : RegisterResponse = RegisterResponse(
-            username=str(user.username),
-            email=user.email,
-            role=user.role
+        response : ResponseModel[RegisterResponse] = ResponseModel(
+            success=True,
+            data=RegisterResponse(
+                username=str(user.username),
+                email=user.email,
+                role=user.role
+            ),
+            message="User registered successfull"
         )
         await db.commit()
-
         return response
 
-    async def login(self, payload : LoginRequest, db : AsyncSession) -> LoginResponse : 
+    async def login(self, payload : LoginRequest, db : AsyncSession) -> ResponseModel[LoginResponse] : 
 
         user = await self.user_repository.find_by_email(payload.email, db)
         valid_password = check_password(user.password, payload.password)
@@ -156,16 +174,25 @@ class AuthService:
         )
         await self.token_repository.add_token(refresh_token_payload, db)
         tokens : TokenResponse = TokenResponse(access_token=access_token, refresh_token=refresh_token)
-        response : LoginResponse = LoginResponse(user=user_response, tokens=tokens)
+        response : ResponseModel[LoginResponse] = ResponseModel(
+            success=True,
+            data=LoginResponse(user=user_response, tokens=tokens),
+            message="User looged in successfully"
+        )
 
         await db.commit()
         return response
 
-    async def logout(self, user_id : int, db : AsyncSession) -> None :
+    async def logout(self, user_id : int, db : AsyncSession) -> ResponseModel[None] :
 
         await self.token_repository.delete_by_user_id(user_id=user_id, db=db)
+        response : ResponseModel[None] = ResponseModel(
+            success=True,
+            data=None,
+            message="Logout successfully"
+        )
         await db.commit()
-        return None
+        return response
         
 
         

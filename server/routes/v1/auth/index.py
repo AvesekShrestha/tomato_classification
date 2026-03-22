@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from middlewares.auth_middleware import current_user_id
 from routes.v1.auth.dto.login_request import LoginRequest
 from routes.v1.auth.dto.login_response import LoginResponse
-from routes.v1.auth.dto.otp import OTPRequest, OTPResponse
+from routes.v1.auth.dto.otp import OTPRequest
 from routes.v1.auth.dto.register_request import RegisterRequest
 from config.database.index import get_db
 from routes.v1.auth.dto.register_response import RegisterResponse
@@ -18,16 +18,11 @@ from utils.errors.index import ValueError
 router = APIRouter()
 auth_service = AuthService()
 
-@router.post("/resend-otp", response_model=ResponseModel[OTPResponse], response_model_exclude_none=True)
-async def resend_otp(payload : OTPRequest, background_task : BackgroundTasks, db : AsyncSession = Depends(get_db)) -> ResponseModel[OTPResponse] :
-
+@router.post("/resend-otp", response_model=ResponseModel[None], response_model_exclude_none=True)
+async def resend_otp(payload : OTPRequest, background_task : BackgroundTasks, db : AsyncSession = Depends(get_db)) -> ResponseModel[None] :
     try:
-        response = await auth_service.resend_OTP(payload, background_task, db)
-        return ResponseModel[OTPResponse](
-            success=True,
-            data=response,
-            message="OTP has been resent successfully"
-        )
+        response : ResponseModel[None] = await auth_service.resend_OTP(payload, background_task, db)
+        return response
     except Exception as e : 
         error_message : str = e.args[0] if e.args[0] else str(e)
         raise InternalServerError(error_message)
@@ -35,13 +30,8 @@ async def resend_otp(payload : OTPRequest, background_task : BackgroundTasks, db
 @router.post("/verify-otp", response_model=ResponseModel[None], response_model_exclude_none=True)
 async def verifyOTP(payload : OTPRequest, db : AsyncSession = Depends(get_db)) -> ResponseModel[None] :
     
-    await auth_service.verify_OTP(payload=payload, db=db)
-
-    return ResponseModel[None](
-        success=True,
-        data=None,
-        message="OTP verified successfully"
-    )
+    response : ResponseModel[None] = await auth_service.verify_OTP(payload=payload, db=db)
+    return response
 
 @router.post("/refresh", response_model_exclude_none=True, response_model=ResponseModel[None])
 async def refresh(request : Request, response : Response, db : AsyncSession = Depends(get_db)) -> ResponseModel[None]: 
@@ -50,12 +40,16 @@ async def refresh(request : Request, response : Response, db : AsyncSession = De
     if not token:
         raise Unauthorized("Session Expired")
 
-    res : TokenResponse = await auth_service.refresh(token, db)
-    if not res.refresh_token : 
+    res : ResponseModel[TokenResponse] = await auth_service.refresh(token, db)
+
+    if not res.data : 
+        raise InternalServerError("Token can't be generated")
+
+    if not res.data.refresh_token : 
         raise ValueError("Refresh Token is not generated")
 
-    response.set_cookie("refreshToken", res.refresh_token, samesite="lax", httponly=True)
-    response.set_cookie("accessToken", res.access_token, samesite="lax", httponly=True)
+    response.set_cookie("refreshToken", res.data.refresh_token, samesite="lax", httponly=True)
+    response.set_cookie("accessToken", res.data.access_token, samesite="lax", httponly=True)
 
     return ResponseModel[None](
         success=True,
@@ -68,7 +62,7 @@ async def register(payload : RegisterRequest, background_task : BackgroundTasks,
     try : 
         print("Hello from register controller")
         response = await auth_service.register(payload, background_task, db)
-        return ResponseModel[RegisterResponse](success=True, data=response, message="User registered successfull")
+        return response
         
     except IntegrityError as e:
         detail_message = getattr(e.orig, 'detail', str(e.orig))
@@ -78,23 +72,26 @@ async def register(payload : RegisterRequest, background_task : BackgroundTasks,
         error_message = e.args[0] if e.args[0] else str(e)
         raise InternalServerError(error_message)
 
-@router.post("/login", response_model_exclude_none=True)
+@router.post("/login",response_model=ResponseModel[LoginResponse], response_model_exclude_none=True)
 async def login(res : Response, payload : LoginRequest, db:AsyncSession = Depends(get_db)) -> ResponseModel[LoginResponse] : 
     try:
         REFRESH_TOKEN_MAX_AGE = 15 * 24 * 60 * 60
         ACCESS_TOKEN_MAX_AGE = 5 * 60 * 60
 
-        response = await auth_service.login(payload=payload, db=db)
+        response : ResponseModel[LoginResponse] = await auth_service.login(payload=payload, db=db)
 
-        if not response.tokens :
+        if not response.data : 
             raise InternalServerError("No tokens generated")
 
-        if response.tokens.refresh_token is None : 
+        if not response.data.tokens :
+            raise InternalServerError("No tokens generated")
+
+        if response.data.tokens.refresh_token is None : 
             raise InternalServerError("Refresh token is not generated")
         
         res.set_cookie(
             key="refreshToken",
-            value=response.tokens.refresh_token,
+            value=response.data.tokens.refresh_token,
             samesite="lax",
             httponly=True,
             max_age=REFRESH_TOKEN_MAX_AGE
@@ -102,14 +99,20 @@ async def login(res : Response, payload : LoginRequest, db:AsyncSession = Depend
         
         res.set_cookie(
             key="accessToken",
-            value=response.tokens.access_token,
+            value=response.data.tokens.access_token,
             samesite="lax",
             httponly=True,
             max_age=ACCESS_TOKEN_MAX_AGE
         )
 
-        response = response.model_copy(update={"tokens" : None})
-        return ResponseModel[LoginResponse](success=True, data=response, message="User looged in successfully")
+        response = response.model_copy(
+            update={
+                "data": response.data.model_copy(
+                    update={"tokens": None}
+                )
+            }
+        )
+        return response
 
     except Exception as e : 
         error_message = e.args[0] if e.args[0] else str(e)
@@ -129,13 +132,8 @@ async def logout(response : Response, db : AsyncSession = Depends(get_db), user_
             samesite="lax"
         )
 
-        await auth_service.logout(user_id=user_id, db=db)
-
-        return ResponseModel[None](
-            success=True,
-            data=None,
-            message="Logout successfully"
-        )
+        res : ResponseModel[None] = await auth_service.logout(user_id=user_id, db=db)
+        return res 
         
     except Exception as e : 
         error_message = e.args[0] if e.args[0] else str(e)

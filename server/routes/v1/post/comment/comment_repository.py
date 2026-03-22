@@ -1,5 +1,4 @@
-from sqlalchemy import select
-from sqlalchemy.engine import result
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -9,12 +8,19 @@ from routes.v1.post.comment.dto.comment_request import CommentRequest
 from schemas.comment import Comment
 from utils.errors.index import NotFound
 
+import base64
+
 
 class CommentRepository : 
 
-    async def find_by_post_id(self, post_id : int, db : AsyncSession) -> List[Comment]:
+    async def find_by_post_id(self, post_id : int, limit : int, cursor : str | None, db : AsyncSession) -> List[Comment]:
  
-        statement = select(Comment).options(selectinload(Comment.user)).where(Comment.post_id == post_id, Comment.parent_id == None)
+        statement = select(Comment).options(selectinload(Comment.user)).where(Comment.post_id == post_id, Comment.parent_id == None).order_by(desc(Comment.created_at)).limit(limit=limit+1)
+        if cursor : 
+            last_date_str : str = base64.urlsafe_b64decode(cursor.encode()).decode()
+            last_date : datetime = datetime.fromisoformat(last_date_str)
+            statement = statement.where(Comment.created_at < last_date)
+
         result = await db.execute(statement=statement)
         comments = result.scalars().all()
 
@@ -97,9 +103,14 @@ class CommentRepository :
 
         return reply
 
-    async def get_reply(self, comment_id : int, db : AsyncSession) -> List[Comment] :
+    async def get_reply(self, comment_id : int, limit : int, cursor : str | None, db : AsyncSession) -> List[Comment] :
 
-        statement = select(Comment).options(selectinload(Comment.replies)).where(Comment.parent_id == comment_id)
+        statement = select(Comment).options(selectinload(Comment.replies)).where(Comment.parent_id == comment_id).order_by(desc(Comment.created_at)).limit(limit=limit+1)
+        if cursor :
+            last_date_str : str = base64.urlsafe_b64decode(cursor.encode()).decode()
+            last_date : datetime = datetime.fromisoformat(last_date_str)
+            statement = statement.where(Comment.created_at < last_date)
+
         result = await db.execute(statement=statement)
         replies = result.scalars().all()
 

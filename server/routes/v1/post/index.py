@@ -15,17 +15,11 @@ router =  APIRouter()
 post_service = PostService()
 
 @router.get("/user", response_model=ResponseModel[List[PostResponse]], response_model_exclude_none=True)
-async def find_by_user_id(user_id : int = Depends(current_user_id), db : AsyncSession = Depends(get_db)) -> ResponseModel[List[PostResponse]] : 
+async def find_by_user_id(cursor : str | None = None, limit : int = 10, user_id : int = Depends(current_user_id), db : AsyncSession = Depends(get_db)) -> ResponseModel[List[PostResponse]] : 
 
-    print(user_id, type(user_id))
-    
     try:
-        response : List[PostResponse] = await post_service.find_by_user_id(user_id=user_id, db=db)
-        return ResponseModel[List[PostResponse]](
-            success=True,
-            data=response,
-            message="Post data retrived successfully"
-        )
+        response : ResponseModel[List[PostResponse]] = await post_service.find_by_user_id(limit=limit, cursor=cursor, user_id=user_id, db=db)
+        return response
     except Exception as e : 
         error_message : str = e.args[0] if e.args[0] else str(e)
         raise InternalServerError(error_message)
@@ -33,14 +27,10 @@ async def find_by_user_id(user_id : int = Depends(current_user_id), db : AsyncSe
 
 
 @router.get("/", response_model=ResponseModel[List[PostResponse]], response_model_exclude_none=True)
-async def find_all(db : AsyncSession = Depends(get_db)) -> ResponseModel[List[PostResponse]] : 
+async def find_all(limit : int = 10, cursor : str | None = None, db : AsyncSession = Depends(get_db)) -> ResponseModel[List[PostResponse]] : 
     try :
-        response : List[PostResponse] = await post_service.find_all(db=db)
-        return ResponseModel[List[PostResponse]](
-            success=True,
-            data=response,
-            message="Posts reterived successfully"
-        )
+        response : ResponseModel[List[PostResponse]] = await post_service.find_all(limit=limit, cursor=cursor, db=db)
+        return response
 
     except Exception as e : 
         error_message : str = e.args[0] if e.args[0] else str(e)
@@ -51,12 +41,8 @@ async def find_all(db : AsyncSession = Depends(get_db)) -> ResponseModel[List[Po
 async def find_by_id(post_id : int, db : AsyncSession = Depends(get_db)) -> ResponseModel[PostResponse] : 
     
     try:
-        response : PostResponse = await post_service.find_by_id(post_id=post_id, db=db)
-        return ResponseModel[PostResponse](
-            success=True,
-            data=response,
-            message="Post data retrived successfully"
-        )
+        response : ResponseModel[PostResponse] = await post_service.find_by_id(post_id=post_id, db=db)
+        return response
     except Exception as e : 
         error_message : str = e.args[0] if e.args[0] else str(e)
         raise InternalServerError(error_message)
@@ -69,12 +55,8 @@ async def create(title : str = Form(...), content : str = Form(...), image : Upl
             content=content,
             image=image
         )
-        response : PostResponse = await post_service.create(payload=payload, user_id=user_id, db=db)
-        return ResponseModel[PostResponse](
-            success=True,
-            data=response,
-            message="post created successfully"
-        )
+        response : ResponseModel[PostResponse] = await post_service.create(payload=payload, user_id=user_id, db=db)
+        return response
 
     except Exception as e: 
         error_message : str = e.args[0] if e.args[0] else str(e)
@@ -83,12 +65,8 @@ async def create(title : str = Form(...), content : str = Form(...), image : Upl
 @router.post("/{post_id}/like", response_model_exclude_none=True, response_model=ResponseModel[PostResponse])
 async def like(post_id : int, user_id : int = Depends(current_user_id), db : AsyncSession = Depends(get_db)) -> ResponseModel[PostResponse] : 
     try : 
-        response : PostResponse = await post_service.like(post_id=post_id, user_id=user_id, db=db)
-        return ResponseModel[PostResponse](
-            success=True,
-            data=response,
-            message="Post liked successfully"
-        )
+        response : ResponseModel[PostResponse] = await post_service.like(post_id=post_id, user_id=user_id, db=db)
+        return response
 
     except Exception as e : 
         error_message : str = e.args[0] if e.args[0] else str(e)
@@ -97,12 +75,8 @@ async def like(post_id : int, user_id : int = Depends(current_user_id), db : Asy
 @router.post("/{post_id}/dislike", response_model_exclude_none=True, response_model=ResponseModel[PostResponse])
 async def dislike(post_id : int, user_id : int = Depends(current_user_id), db : AsyncSession = Depends(get_db)) -> ResponseModel[PostResponse] : 
     try : 
-        response : PostResponse = await post_service.dislike(post_id=post_id, user_id=user_id, db=db)
-        return ResponseModel[PostResponse](
-            success=True,
-            data=response,
-            message="Post disliked successfully"
-        )
+        response : ResponseModel[PostResponse] = await post_service.dislike(post_id=post_id, user_id=user_id, db=db)
+        return response
 
     except Exception as e : 
         error_message : str = e.args[0] if e.args[0] else str(e)
@@ -113,12 +87,8 @@ async def dislike(post_id : int, user_id : int = Depends(current_user_id), db : 
 async def delete(post_id : int, db : AsyncSession = Depends(get_db)) -> ResponseModel[None] : 
     
     try : 
-        await post_service.delete(post_id=post_id, db=db)
-        return ResponseModel[None](
-            success=True,
-            data=None,
-            message="Post deleted successfully"
-        )
+        response : ResponseModel[None] = await post_service.delete(post_id=post_id, db=db)
+        return response
 
     except Exception as e : 
         error_message : str = e.args[0] if e.args[0] else str(e)
