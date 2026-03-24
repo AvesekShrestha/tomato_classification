@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from operator import pos
 from routes.v1.post.dto.post_response import PostResponse
 from routes.v1.post.dto.post_request import PostRequest
 from routes.v1.post.dto.post_update import PostUpdate
@@ -7,6 +6,7 @@ from routes.v1.post.reaction.dto.reaction_request import ReactionRequest
 from schemas.post import Post
 from schemas.reaction import TargetType
 from utils.response.index import Pagination, ResponseModel
+from utils.errors.index import Forbidden
 from .post_repository import PostRepository
 from .reaction.reaction_service import ReactionService 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -173,8 +173,14 @@ class PostService :
         await db.commit()
         return response
 
-    async def delete(self, post_id : int, db : AsyncSession) -> ResponseModel[None] : 
+    async def delete(self, post_id : int, user_id : int, db : AsyncSession) -> ResponseModel[None] : 
 
+        post : Post = await self.post_repository.find_by_id(post_id=post_id, db=db)
+        
+        if post.user_id != user_id : 
+            raise Forbidden("you don't have acccess to delete the post")
+
+       
         await self.post_repository.delete(post_id=post_id, db=db)
 
         await db.commit()

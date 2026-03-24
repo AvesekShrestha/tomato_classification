@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from fastapi import Depends, BackgroundTasks
 from config.database.index import get_db
 from routes.v1.auth.dto.login_request import LoginRequest
@@ -39,6 +39,7 @@ class AuthService:
 
         background_task.add_task(send_mail, otp, payload.email)
         user.otp = otp
+        user.otp_expires_at = datetime.now() + timedelta(minutes=5) 
 
         response : ResponseModel[None] = ResponseModel(
             success=True,

@@ -10,7 +10,7 @@ class ReactionRepository :
 
     async def find(self, user_id : int, target_id : int, target_type : TargetType, db : AsyncSession) -> Reaction | None:
 
-        statement = select(Reaction).where(Reaction.target_id == target_id and Reaction.user_id == user_id, Reaction.target_type == target_type)
+        statement = select(Reaction).where(Reaction.target_id == target_id, Reaction.user_id == user_id, Reaction.target_type == target_type)
         result = await db.execute(statement=statement)
         reaction = result.scalar_one_or_none()
 
@@ -62,4 +62,3 @@ class ReactionRepository :
         await db.flush()
         await db.refresh(target)
         return target
-

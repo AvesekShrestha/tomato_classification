@@ -1,12 +1,11 @@
 from typing import List
-from fastapi import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from routes.v1.post.comment.dto.comment_request import CommentRequest
 from routes.v1.post.reaction.dto.reaction_request import ReactionRequest
 from schemas.comment import Comment
 from schemas.reaction import TargetType
-from utils.errors.index import Unauthorized
+from utils.errors.index import Forbidden
 from utils.response.index import Pagination, ResponseModel
 from .comment_repository import CommentRepository
 from routes.v1.post.comment.dto.comment_response import CommentResponse
@@ -150,7 +149,7 @@ class CommentService() :
         comment : Comment = await self.comment_repository.find_by_id(comment_id=comment_id, db=db)
 
         if(comment.user_id != user_id) : 
-            raise Unauthorized("you don't have acccess to delete the comment")
+            raise Forbidden("you don't have acccess to delete the comment")
 
         await self.comment_repository.delete(comment_id=comment_id, db=db)
 

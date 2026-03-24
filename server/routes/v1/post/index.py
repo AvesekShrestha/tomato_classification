@@ -84,10 +84,10 @@ async def dislike(post_id : int, user_id : int = Depends(current_user_id), db : 
 
 
 @router.delete("/{post_id}", response_model=ResponseModel[None], response_model_exclude_none=True)
-async def delete(post_id : int, db : AsyncSession = Depends(get_db)) -> ResponseModel[None] : 
+async def delete(post_id : int, user_id : int = Depends(current_user_id), db : AsyncSession = Depends(get_db)) -> ResponseModel[None] : 
     
     try : 
-        response : ResponseModel[None] = await post_service.delete(post_id=post_id, db=db)
+        response : ResponseModel[None] = await post_service.delete(post_id=post_id, user_id=user_id, db=db)
         return response
 
     except Exception as e : 
