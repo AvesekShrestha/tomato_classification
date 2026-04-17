@@ -1,6 +1,5 @@
-from os import linesep
 from typing import List
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database.index import get_db

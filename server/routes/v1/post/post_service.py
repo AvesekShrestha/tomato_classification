@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from operator import pos
 from routes.v1.post.dto.post_response import PostResponse
 from routes.v1.post.dto.post_request import PostRequest
 from routes.v1.post.dto.post_update import PostUpdate
@@ -32,8 +33,9 @@ class PostService :
             next_cursor = base64.urlsafe_b64encode(last_created_at.encode()).decode()
             posts = posts[:limit]
 
-        else : 
+        else :
             next_cursor = None
+
 
         response : ResponseModel[List[PostResponse]] = ResponseModel(
             success=True,
@@ -45,6 +47,7 @@ class PostService :
                     like=post.like,
                     dislike=post.dislike,
                     image=post.image,
+                    total_comments=len(post.comments),
                     user=post.user,
                     create_at=post.created_at
                 )
@@ -78,13 +81,13 @@ class PostService :
             success=True,
             data=[
                 PostResponse(
-
                     id=post.id,
                     title=post.title,
                     content=post.content,
                     like=post.like,
                     dislike=post.dislike,
                     image=post.image,
+                    total_comments=len(post.comments),
                     user=post.user,
                     create_at=post.created_at
                 )
@@ -111,6 +114,7 @@ class PostService :
                 like=post.like,
                 dislike=post.dislike,
                 image=post.image,
+                total_comments=len(post.comments),
                 user=post.user,
                 create_at=post.created_at
             ),
@@ -176,7 +180,6 @@ class PostService :
     async def delete(self, post_id : int, user_id : int, db : AsyncSession) -> ResponseModel[None] : 
 
         post : Post = await self.post_repository.find_by_id(post_id=post_id, db=db)
-        
         if post.user_id != user_id : 
             raise Forbidden("you don't have acccess to delete the post")
 

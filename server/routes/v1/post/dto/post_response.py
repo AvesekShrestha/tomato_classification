@@ -11,6 +11,7 @@ class PostResponse(BaseModel) :
     like : int
     dislike : int
     image : Optional[str] = None
+    total_comments : Optional[int] = None 
     create_at : datetime
     user : Optional[UserResponse] = None
 

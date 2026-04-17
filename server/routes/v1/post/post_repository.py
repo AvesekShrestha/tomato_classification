@@ -16,7 +16,7 @@ class PostRepository :
 
     async def find_all(self, limit : int, cursor : str | None, db : AsyncSession) -> List[Post] : 
 
-        statement = select(Post).options(selectinload(Post.user)).order_by(desc(Post.created_at)).limit(limit=limit+1)
+        statement = select(Post).options(selectinload(Post.user)).options(selectinload(Post.comments)).order_by(desc(Post.created_at)).limit(limit=limit+1)
 
         if cursor : 
             last_date_str : str = base64.urlsafe_b64decode(cursor.encode()).decode()
@@ -26,14 +26,11 @@ class PostRepository :
         result = await db.execute(statement=statement)
         posts = result.scalars().all()
 
-        if not posts : 
-            raise NotFound("Posts not found")
-
         return list(posts)
 
     async def find_by_user_id(self, limit : int, cursor : str | None, user_id : int, db : AsyncSession) -> List[Post] : 
 
-        statement = select(Post).options(selectinload(Post.user)).where(Post.user_id == user_id).order_by(desc(Post.created_at)).limit(limit=limit + 1)
+        statement = select(Post).options(selectinload(Post.user)).options(selectinload(Post.comments)).where(Post.user_id == user_id).order_by(desc(Post.created_at)).limit(limit=limit + 1)
 
         if cursor : 
             last_date_str : str = base64.urlsafe_b64decode(cursor.encode()).decode()
@@ -43,14 +40,11 @@ class PostRepository :
         result = await db.execute(statement=statement)
         posts = result.scalars().all()
 
-        if not posts : 
-            raise NotFound("No post")
-
         return list(posts)
 
     async def find_by_id(self, post_id : int, db : AsyncSession) -> Post : 
 
-        statement = select(Post).options(selectinload(Post.user)).where(Post.id == post_id)
+        statement = select(Post).options(selectinload(Post.user)).options(selectinload(Post.comments)).where(Post.id == post_id)
         result = await db.execute(statement=statement)
         post = result.scalar_one_or_none()
 

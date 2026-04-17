@@ -15,7 +15,7 @@ class CommentRepository :
 
     async def find_by_post_id(self, post_id : int, limit : int, cursor : str | None, db : AsyncSession) -> List[Comment]:
  
-        statement = select(Comment).options(selectinload(Comment.user)).where(Comment.post_id == post_id, Comment.parent_id == None).order_by(desc(Comment.created_at)).limit(limit=limit+1)
+        statement = select(Comment).options(selectinload(Comment.user)).options(selectinload(Comment.replies)).where(Comment.post_id == post_id, Comment.parent_id == None).order_by(desc(Comment.created_at)).limit(limit=limit+1)
         if cursor : 
             last_date_str : str = base64.urlsafe_b64decode(cursor.encode()).decode()
             last_date : datetime = datetime.fromisoformat(last_date_str)
@@ -24,14 +24,11 @@ class CommentRepository :
         result = await db.execute(statement=statement)
         comments = result.scalars().all()
 
-        if not comments : 
-            raise NotFound("No comments found")
-
-        return list(comments) 
+        return list(comments)
 
     async def find_by_id(self, comment_id : int, db : AsyncSession) -> Comment : 
         
-        statement = select(Comment).options(selectinload(Comment.user)).where(Comment.id == comment_id)
+        statement = select(Comment).options(selectinload(Comment.user)).options(selectinload(Comment.replies)).where(Comment.id == comment_id)
         result = await db.execute(statement=statement)
         comment = result.scalar_one_or_none()
 
@@ -113,9 +110,6 @@ class CommentRepository :
 
         result = await db.execute(statement=statement)
         replies = result.scalars().all()
-
-        if not replies : 
-            raise NotFound("No replies")
 
         return list(replies)
 
