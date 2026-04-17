@@ -5,6 +5,7 @@ from schemas.user import User
 from utils.errors.index import NotFound
 from sqlalchemy import select
 from typing import List
+from schemas.user import UserRole
 
 class UserRepository: 
 
@@ -47,3 +48,9 @@ class UserRepository:
         await db.flush()
         await db.refresh(user)
 
+    async def find_experts(self, db : AsyncSession) ->  List[User] : 
+        statement = select(User).where(User.role == UserRole.EXPERT)
+        result = await db.execute(statement)
+        experts = result.scalars().all()
+
+        return list(experts)

@@ -16,3 +16,8 @@ class SocketManager :
         socket : WebSocket | None = self.active_connections.get(to)
         if socket :
             await socket.send_text(message)
+
+    def is_online(self, user_id : int) -> bool : 
+        return user_id in self.active_connections
+
+socket_manager = SocketManager()

@@ -11,6 +11,7 @@ async def socket_current_user_id(socket: WebSocket) -> int:
     
     try:
         user: AccessTokenPayload = decode_access_token(access_token)
+        print(user.user_id)
         return user.user_id
     except Exception:
         await socket.close(code=1008)

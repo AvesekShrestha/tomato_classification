@@ -2,7 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.database.index import get_db
-from config.socket.index import SocketManager
+from config.socket.index import socket_manager 
 from middlewares.auth_middleware import current_user_id, socket_current_user_id
 from routes.v1.chat.chat_service import ChatService
 from routes.v1.chat.dto.chat_response import ChatResponse
@@ -11,7 +11,6 @@ from utils.errors.index import InternalServerError
 from utils.response.index import ResponseModel
 
 router = APIRouter()
-socket_manager = SocketManager()
 chat_service = ChatService(socket_manager)
 
 @router.websocket("/ws")
