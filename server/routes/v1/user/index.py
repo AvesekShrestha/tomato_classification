@@ -1,15 +1,14 @@
-from re import L
 from typing import List
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import exc
 from config.database.index import  get_db
 from routes.v1.user.dto.expert_response import ExpertResponse
 from routes.v1.user.dto.user_response import UserResponse
+from schemas import user
 from utils.errors.index import InternalServerError
 from utils.response.index import ResponseModel
 from .user_service import UserService
-from middlewares.auth_middleware import current_user_id
+from middlewares.auth_middleware import admin_authorization, current_user_id
 
 router = APIRouter()
 user_service = UserService()
@@ -29,6 +28,15 @@ async def find_experts(db : AsyncSession = Depends(get_db)) -> ResponseModel[Lis
 
     try : 
         response : ResponseModel[List[ExpertResponse]] = await user_service.find_experts(db=db)
+        return response
+    except Exception as e : 
+        error_message = e.args[0] if e.args[0] else str(e)
+        raise InternalServerError(error_message)
+
+@router.get("/pending-expert", response_model=ResponseModel[List[ExpertResponse]], response_model_exclude_none=True)
+async def pending(db : AsyncSession = Depends(get_db), _ = Depends(admin_authorization)) -> ResponseModel[List[ExpertResponse]] : 
+    try : 
+        response : ResponseModel[List[ExpertResponse]] = await user_service.find_pending_experts(db=db)
         return response
     except Exception as e : 
         error_message = e.args[0] if e.args[0] else str(e)
@@ -56,4 +64,22 @@ async def get_by_id(user_id : int, db : AsyncSession = Depends(get_db)) -> Respo
         error_message = e.args[0] if e.args[0] else str(e)
         raise InternalServerError(error_message)
 
+@router.patch("/{user_id}/approve", response_model=ResponseModel[ExpertResponse], response_model_exclude_none=True)
+async def approve_expert(user_id : int, db : AsyncSession = Depends(get_db)) -> ResponseModel[ExpertResponse] : 
+    try: 
+        response = await user_service.approve_expert(user_id=user_id, db=db)
+        return response
 
+    except Exception as e : 
+        error_message = e.args[0] if e.args[0] else str(e)
+        raise InternalServerError(error_message)
+
+@router.patch("/{user_id}/reject", response_model=ResponseModel[ExpertResponse], response_model_exclude_none=True)
+async def reject_expert(user_id : int, db : AsyncSession = Depends(get_db)) -> ResponseModel[ExpertResponse] : 
+    try: 
+        response = await user_service.reject_expert(user_id=user_id, db=db)
+        return response
+
+    except Exception as e : 
+        error_message = e.args[0] if e.args[0] else str(e)
+        raise InternalServerError(error_message)

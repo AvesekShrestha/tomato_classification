@@ -1,5 +1,7 @@
+from fastapi import Response
 from routes.v1.user.dto.expert_response import ExpertResponse
 from routes.v1.user.dto.user_response import UserResponse
+from schemas.user import UserStatus
 from utils.response.index import ResponseModel
 from .user_repository import UserRepository
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -80,3 +82,61 @@ class UserService:
         ) 
 
         return response
+    async def find_pending_experts(self, db : AsyncSession) -> ResponseModel[List[ExpertResponse]] : 
+
+            experts = await self.user_repository.find_pending_experts(db=db)
+
+            response : ResponseModel[List[ExpertResponse]] = ResponseModel(
+                success=True,
+                data=[
+                    ExpertResponse(
+                        username=expert.username,
+                        email=expert.email,
+                        role=expert.role,
+                        online=socket_manager.is_online(expert.id)
+                    )
+                    for expert in experts
+                ],
+                message="Expert retrived successfully",
+                pagination=None
+            ) 
+
+            return response
+
+    async def approve_expert(self, user_id : int, db : AsyncSession) -> ResponseModel[ExpertResponse] : 
+
+        expert = await self.user_repository.find_by_id(user_id=user_id, db=db)
+        expert.status = UserStatus.ACTIVE
+
+        response : ResponseModel[ExpertResponse] = ResponseModel(
+            success=True, 
+            data=ExpertResponse(
+                username=expert.username,
+                email=expert.email,
+                role=expert.role
+            ),
+            message="Expert approved successfully",
+        )
+
+        await db.commit()
+
+        return response
+
+    async def reject_expert(self, user_id : int, db : AsyncSession) -> ResponseModel[ExpertResponse] : 
+
+        expert = await self.user_repository.find_by_id(user_id=user_id, db=db)
+        expert.status = UserStatus.REJECTED
+
+        response : ResponseModel[ExpertResponse] = ResponseModel(
+            success=True, 
+            data=ExpertResponse(
+                username=expert.username,
+                email=expert.email,
+                role=expert.role
+            ),
+            message="Expert rejected"
+        )
+
+        await db.commit()
+
+        return response 

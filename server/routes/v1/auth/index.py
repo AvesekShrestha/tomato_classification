@@ -60,10 +60,9 @@ async def refresh(request : Request, response : Response, db : AsyncSession = De
 @router.post("/register", response_model_exclude_none=True, response_model=ResponseModel[RegisterResponse])
 async def register(payload : RegisterRequest, background_task : BackgroundTasks, db : AsyncSession = Depends(get_db)) -> ResponseModel[RegisterResponse]: 
     try : 
-        print("Hello from register controller")
         response = await auth_service.register(payload, background_task, db)
         return response
-        
+
     except IntegrityError as e:
         detail_message = getattr(e.orig, 'detail', str(e.orig))
         raise ValueError(detail_message)

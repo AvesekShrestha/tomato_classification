@@ -1,4 +1,5 @@
+from typing import Optional
 from .user_response import UserResponse
 
 class ExpertResponse(UserResponse) : 
-    online : bool 
+    online :  Optional[bool] = None

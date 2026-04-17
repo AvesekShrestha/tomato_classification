@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from fastapi import Depends, BackgroundTasks
 from config.database.index import get_db
 from routes.v1.auth.dto.login_request import LoginRequest
@@ -7,8 +7,10 @@ from routes.v1.auth.dto.register_request import RegisterRequest
 from routes.v1.auth.dto.register_response import RegisterResponse
 from routes.v1.auth.dto.token_response import TokenResponse
 from routes.v1.user.dto.user_response import UserResponse
+from routes.v1.user.dto.user_role import UserRole
 from routes.v1.user.user_repository import UserRepository
 from schemas.refresh_token import RefreshToken
+from schemas.user import UserStatus
 from utils.response.index import ResponseModel
 from utils.tokens.token_type import AccessTokenPayload, TokenType
 from .auth_repository import AuthRepository
@@ -126,6 +128,8 @@ class AuthService:
     async def register(self, payload : RegisterRequest, background_task : BackgroundTasks, db : AsyncSession) -> ResponseModel[RegisterResponse] :
 
         hashed_password = hash_password(payload.password)
+        if payload.role == UserRole.EXPERT : 
+            payload = payload.model_copy(update={'status' : UserStatus.PENDING})
         payload = payload.model_copy(update={'password' : hashed_password})
 
         user = await self.auth_repository.register(payload, db)
@@ -194,6 +198,4 @@ class AuthService:
         )
         await db.commit()
         return response
-        
 
-        
