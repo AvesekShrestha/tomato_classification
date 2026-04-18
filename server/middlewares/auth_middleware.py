@@ -1,5 +1,5 @@
 from fastapi import Request, WebSocket, WebSocketException
-from utils.errors.index import Unauthorized
+from utils.errors.index import Forbidden, Unauthorized
 from utils.tokens.token_type import AccessTokenPayload
 from utils.tokens.index import decode_access_token
 
@@ -11,6 +11,7 @@ async def socket_current_user_id(socket: WebSocket) -> int:
     
     try:
         user: AccessTokenPayload = decode_access_token(access_token)
+        print(user.user_id)
         return user.user_id
     except Exception:
         await socket.close(code=1008)
@@ -43,3 +44,19 @@ def authenticate(request : Request) -> None :
     except Exception as e: 
         raise e
 
+def admin_authorization(request : Request) -> bool : 
+    try : 
+        access_token = request.cookies.get("accessToken")
+
+        if not access_token : 
+            raise Unauthorized("kaccess token is not present")
+
+        user = decode_access_token(access_token)
+        
+        if user.role == "admin" : 
+            return True
+
+        else : 
+            raise Forbidden("You don't have admin access")
+    except Exception as e : 
+        raise e

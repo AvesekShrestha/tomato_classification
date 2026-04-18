@@ -8,15 +8,29 @@ import torch
 from utils.errors.index import InternalServerError
 from utils.prompt.index import get_prompt
 import json
+from typing import cast
+import torch.nn.functional as F
 
 class ImageService : 
 
     def __init__(self) -> None:
         self.client = genai.Client()
 
-    async def predict(self, file) :
+    async def predict(self, file):
 
-        classes = ['Tomato___Bacterial_spot', 'Tomato___Early_blight', 'Tomato___Late_blight', 'Tomato___Leaf_Mold', 'Tomato___Septoria_leaf_spot', 'Tomato___Spider_mites Two-spotted_spider_mite', 'Tomato___Target_Spot', 'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus', 'Tomato___healthy']
+        classes = [
+            'Tomato___Bacterial_spot',
+            'Tomato___Early_blight',
+            'Tomato___Late_blight',
+            'Tomato___Leaf_Mold',
+            'Tomato___Septoria_leaf_spot',
+            'Tomato___Spider_mites Two-spotted_spider_mite',
+            'Tomato___Target_Spot',
+            'Tomato___Tomato_Yellow_Leaf_Curl_Virus',
+            'Tomato___Tomato_mosaic_virus',
+            'Tomato___healthy'
+        ]
+
         transform = Compose([
             Resize((256, 256)),
             ToTensor(),
@@ -24,22 +38,42 @@ class ImageService :
         ])
 
         image_bytes = await file.read()
+
         try:
             image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         except Exception as e:
             raise InternalServerError(str(e))
 
-        input_tensor = transform(image).unsqueeze(0)
+        input_tensor: torch.Tensor = cast(torch.Tensor, transform(image))
+        input_tensor = input_tensor.unsqueeze(0)
 
         model = get_model()
+
         with torch.no_grad():
             output = model(input_tensor)
-            _, prediction = torch.max(output, 1)
-            predicted_class = classes[prediction.item()]
-        
+
+            probs = F.softmax(output, dim=1)
+
+            confidence, prediction = torch.max(probs, 1)
+
+            confidence_score = float(confidence.item())
+            predicted_class = classes[int(prediction.item())]
+
+            print(confidence_score, predicted_class)
+
+        THRESHOLD = 0.7
+
+        if confidence_score < THRESHOLD:
+            return "Unknown"
+
         return predicted_class
 
     def get_diesase_info(self, disease_class) -> ImageResponse : 
+
+        if disease_class == "Unknown" : 
+            return ImageResponse(
+                predicted_class="Unknown"
+            )
 
         prompt = get_prompt(disease_class)
         response = self.client.models.generate_content(

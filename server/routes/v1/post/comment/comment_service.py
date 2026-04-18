@@ -8,6 +8,8 @@ from schemas.reaction import TargetType
 from utils.errors.index import Forbidden
 from utils.response.index import Pagination, ResponseModel
 from .comment_repository import CommentRepository
+from routes.v1.post.post_repository import PostRepository
+from schemas.post import Post
 from routes.v1.post.comment.dto.comment_response import CommentResponse
 from routes.v1.post.reaction.reaction_service import ReactionService 
 import base64
@@ -18,8 +20,11 @@ class CommentService() :
     def __init__(self) : 
         self.comment_repository = CommentRepository()
         self.reaction_service = ReactionService()
+        self.post_repository = PostRepository()
 
     async def find_by_post_id(self, post_id : int, limit : int, cursor : str | None, db : AsyncSession) -> ResponseModel[List[CommentResponse]] : 
+
+        await self.post_repository.find_by_id(post_id=post_id, db=db)
 
         comments : List[Comment] = await self.comment_repository.find_by_post_id(post_id=post_id, limit=limit, cursor=cursor, db=db)
 
@@ -40,6 +45,7 @@ class CommentService() :
                     content=comment.content,
                     like=comment.like,
                     dislike=comment.dislike,
+                    total_replies=len(comment.replies),
                     created_at=comment.created_at,
                     user=comment.user,
                 )
@@ -66,6 +72,7 @@ class CommentService() :
                 content=comment.content,
                 like=comment.like,
                 dislike=comment.dislike,
+                total_replies=len(comment.replies),
                 created_at=comment.created_at,
                 user=comment.user
             ),
@@ -77,6 +84,7 @@ class CommentService() :
 
     async def create(self, payload : CommentRequest, post_id : int, user_id : int, db : AsyncSession) -> ResponseModel[CommentResponse] :
  
+        await self.post_repository.find_by_id(post_id=post_id, db=db) 
         comment : Comment = await self.comment_repository.create(payload=payload, post_id=post_id, user_id=user_id, db=db)
 
         response : ResponseModel[CommentResponse] = ResponseModel(
@@ -96,6 +104,7 @@ class CommentService() :
 
     async def get_reply(self, comment_id : int, limit : int, cursor : str | None, db : AsyncSession) -> ResponseModel[List[CommentResponse]] :
 
+        await self.comment_repository.find_by_id(comment_id=comment_id, db=db) 
         replies : List[Comment] = await self.comment_repository.get_reply(comment_id=comment_id, limit=limit, cursor=cursor, db=db)
         has_more : bool = len(replies) > limit
 
@@ -114,6 +123,7 @@ class CommentService() :
                     content=reply.content,
                     like=reply.like,
                     dislike=reply.dislike,
+                    total_replies=len(reply.replies),
                     created_at=reply.created_at,
                 ) for reply in replies
             ],

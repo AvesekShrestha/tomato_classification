@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
-from schemas.user import User
+from schemas.user import User, UserStatus
 from utils.errors.index import NotFound
 from sqlalchemy import select
 from typing import List
+from schemas.user import UserRole
 
 class UserRepository: 
 
@@ -47,3 +48,16 @@ class UserRepository:
         await db.flush()
         await db.refresh(user)
 
+    async def find_experts(self, db : AsyncSession) ->  List[User] : 
+        statement = select(User).where(User.role == UserRole.EXPERT, User.status == UserStatus.ACTIVE)
+        result = await db.execute(statement)
+        experts = result.scalars().all()
+
+        return list(experts)
+
+    async def find_pending_experts(self, db : AsyncSession) ->  List[User] : 
+        statement = select(User).where(User.role == UserRole.EXPERT, User.status == UserStatus.PENDING)
+        result = await db.execute(statement)
+        experts = result.scalars().all()
+
+        return list(experts)

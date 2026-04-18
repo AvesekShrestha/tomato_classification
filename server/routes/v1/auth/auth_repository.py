@@ -9,7 +9,8 @@ class AuthRepository:
             username=payload.username,
             email=payload.email,
             password=payload.password,
-            role=payload.role
+            role=payload.role,
+            status=payload.status
         )
         print(user)
         db.add(user)
