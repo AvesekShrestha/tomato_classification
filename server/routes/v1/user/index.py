@@ -65,7 +65,7 @@ async def get_by_id(user_id : int, db : AsyncSession = Depends(get_db)) -> Respo
         raise InternalServerError(error_message)
 
 @router.patch("/{user_id}/approve", response_model=ResponseModel[ExpertResponse], response_model_exclude_none=True)
-async def approve_expert(user_id : int, db : AsyncSession = Depends(get_db)) -> ResponseModel[ExpertResponse] : 
+async def approve_expert(user_id : int, db : AsyncSession = Depends(get_db), _ = Depends(admin_authorization)) -> ResponseModel[ExpertResponse] : 
     try: 
         response = await user_service.approve_expert(user_id=user_id, db=db)
         return response
@@ -75,7 +75,7 @@ async def approve_expert(user_id : int, db : AsyncSession = Depends(get_db)) -> 
         raise InternalServerError(error_message)
 
 @router.patch("/{user_id}/reject", response_model=ResponseModel[ExpertResponse], response_model_exclude_none=True)
-async def reject_expert(user_id : int, db : AsyncSession = Depends(get_db)) -> ResponseModel[ExpertResponse] : 
+async def reject_expert(user_id : int, db : AsyncSession = Depends(get_db), _ = Depends(admin_authorization)) -> ResponseModel[ExpertResponse] : 
     try: 
         response = await user_service.reject_expert(user_id=user_id, db=db)
         return response

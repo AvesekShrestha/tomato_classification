@@ -1,4 +1,3 @@
-from fastapi import Response
 from routes.v1.user.dto.expert_response import ExpertResponse
 from routes.v1.user.dto.user_response import UserResponse
 from schemas.user import UserStatus
@@ -70,6 +69,7 @@ class UserService:
             success=True,
             data=[
                 ExpertResponse(
+                    id=expert.id,
                     username=expert.username,
                     email=expert.email,
                     role=expert.role,
@@ -93,6 +93,7 @@ class UserService:
                         username=expert.username,
                         email=expert.email,
                         role=expert.role,
+                        id=expert.id,
                         online=socket_manager.is_online(expert.id)
                     )
                     for expert in experts
@@ -113,7 +114,8 @@ class UserService:
             data=ExpertResponse(
                 username=expert.username,
                 email=expert.email,
-                role=expert.role
+                role=expert.role,
+                id=expert.id
             ),
             message="Expert approved successfully",
         )
@@ -132,7 +134,8 @@ class UserService:
             data=ExpertResponse(
                 username=expert.username,
                 email=expert.email,
-                role=expert.role
+                role=expert.role,
+                id=expert.id
             ),
             message="Expert rejected"
         )
