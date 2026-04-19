@@ -18,6 +18,7 @@ class UserService:
             success=True,
             data=[
                 UserResponse(
+                    id=user.id,
                     username=user.username,
                     email=user.email,
                     role=user.role
@@ -34,6 +35,7 @@ class UserService:
         response : ResponseModel[UserResponse] = ResponseModel(
             success=True,
             data=UserResponse(
+                id=user.id,
                 username=user.username,
                 email=user.email,
                 role=user.role
@@ -48,6 +50,7 @@ class UserService:
         response : ResponseModel[UserResponse] = ResponseModel(
             success=True,
             data=UserResponse(
+                id=user.id,
                 username=user.username,
                 email=user.email,
                 role=user.role
