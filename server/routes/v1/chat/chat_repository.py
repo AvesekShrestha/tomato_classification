@@ -42,9 +42,6 @@ class ChatRepository :
         result = await db.execute(statement=statement)
         chats = result.scalars().all()
 
-        if not chats : 
-            raise NotFound("Chats not found")
-
         return list(chats)
 
          
