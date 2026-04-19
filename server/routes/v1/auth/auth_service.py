@@ -142,6 +142,7 @@ class AuthService:
         response : ResponseModel[RegisterResponse] = ResponseModel(
             success=True,
             data=RegisterResponse(
+                id=user.id,
                 username=str(user.username),
                 email=user.email,
                 role=user.role
@@ -160,7 +161,7 @@ class AuthService:
         if not valid_password : 
             raise ValueError("Invalid passowrd")
         
-        user_response : UserResponse = UserResponse(username=user.username, email=user.email, role=user.role)
+        user_response : UserResponse = UserResponse(id=user.id, username=user.username, email=user.email, role=user.role)
 
         access_token_payload : AccessTokenPayload = AccessTokenPayload(
             user_id=user.id,
