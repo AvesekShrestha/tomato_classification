@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import date, datetime
+from time import timezone
 from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 from config.database.index import Base
@@ -13,4 +14,4 @@ class Chat(Base) :
     sender_id : Mapped[int] = mapped_column(Integer, nullable=False)
     receiver_id : Mapped[int] = mapped_column(Integer, nullable=False)
     is_read : Mapped[bool] = mapped_column(Boolean, default=False)
-    messaged_at : Mapped[datetime] = mapped_column(DateTime, default=datetime.now()) 
+    messaged_at : Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
