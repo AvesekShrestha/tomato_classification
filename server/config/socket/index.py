@@ -12,10 +12,10 @@ class SocketManager :
     async def disconnect(self, user_id : int) : 
         self.active_connections.pop(user_id)
 
-    async def send_message(self, to : int, message : str) :
+    async def send_message(self, to : int, message : dict) :
         socket : WebSocket | None = self.active_connections.get(to)
         if socket :
-            await socket.send_text(message)
+            await socket.send_json(message)
 
     def is_online(self, user_id : int) -> bool : 
         return user_id in self.active_connections
