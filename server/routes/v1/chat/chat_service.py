@@ -17,8 +17,6 @@ class ChatService:
         self.chat_repository = ChatRepository()
 
     async def send_message(self, payload : MessageRequest, user_id : int, db : AsyncSession) :
-        await self.socket_manager.send_message(to=payload.to, message=payload.message)
-
         chat_payload : ChatRequest = ChatRequest(
             message=payload.message,
             sender_id=user_id,
@@ -29,6 +27,17 @@ class ChatService:
 
         await self.chat_repository.create(payload=chat_payload, db=db)
         await db.commit()
+
+        await self.socket_manager.send_message(
+            to=payload.to,
+            message={
+                "message": chat_payload.message,
+                "sender_id": chat_payload.sender_id,
+                "receiver_id": chat_payload.receiver_id,
+                "is_read": chat_payload.is_read,
+                "messaged_at": chat_payload.messaged_at.isoformat(),
+            }
+        )
 
 
     async def get_message(self, user_id : int, receiver_id : int, limit : int, cursor : str | None, db : AsyncSession) -> ResponseModel[List[ChatResponse]] :
