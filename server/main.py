@@ -1,6 +1,9 @@
 from fastapi import BackgroundTasks, FastAPI, Request
 from contextlib import asynccontextmanager
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+import os
+
 from config.database.index import initalize_database
 from utils.errors.index import AppException
 from utils.response.index import ResponseModel
@@ -22,7 +25,7 @@ app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
+       "http://localhost:5173",
         "http://localhost:3000"
     ],
     allow_credentials=True,
