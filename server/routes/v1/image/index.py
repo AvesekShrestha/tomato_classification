@@ -2,16 +2,19 @@ from fastapi import APIRouter, File, UploadFile
 from utils.response.index import ResponseModel
 from routes.v1.image.image_service import ImageService
 from routes.v1.image.dto.image_response import ImageResponse
+from routes.v1.image.image_service_test import ImageServiceTest
 
 
 router = APIRouter()
 image_service = ImageService() 
+image_service_test = ImageServiceTest()
 
 @router.post("/predict/")
 async def predict_image(file: UploadFile = File(...)):
 
 
     disease_class = await image_service.predict(file)
+    # disease_class = await image_service_test.predict(file=file)
     disease_info = image_service.get_diesase_info(disease_class)
 
     return ResponseModel[ImageResponse](

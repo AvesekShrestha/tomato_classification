@@ -6,6 +6,7 @@ from routes.v1.auth.dto.login_response import LoginResponse
 from routes.v1.auth.dto.register_request import RegisterRequest
 from routes.v1.auth.dto.register_response import RegisterResponse
 from routes.v1.auth.dto.token_response import TokenResponse
+from routes.v1.user import user_repository
 from routes.v1.user.dto.user_response import UserResponse
 from routes.v1.user.dto.user_role import UserRole
 from routes.v1.user.user_repository import UserRepository
@@ -16,7 +17,7 @@ from utils.tokens.token_type import AccessTokenPayload, TokenType
 from .auth_repository import AuthRepository
 from utils.password.index import check_password, hash_password
 from sqlalchemy.ext.asyncio import AsyncSession
-from utils.errors.index import BadRequest, InternalServerError, TokenExpired, ValueError, OTPExpired
+from utils.errors.index import BadRequest, InternalServerError, NotFound, TokenExpired, ValueError, OTPExpired
 from utils.tokens.index import generate_access_token, generate_refresh_token
 from routes.v1.token.token_repository import TokenRepository
 from routes.v1.token.dto.index import TokenPayload
@@ -127,6 +128,11 @@ class AuthService:
 
     async def register(self, payload : RegisterRequest, background_task : BackgroundTasks, db : AsyncSession) -> ResponseModel[RegisterResponse] :
 
+        user_exists = await self.user_repository.find_by_email(payload.email, db=db)
+
+        if(user_exists): 
+            raise BadRequest("Email already in use")
+
         hashed_password = hash_password(payload.password)
         if payload.role == UserRole.EXPERT : 
             payload = payload.model_copy(update={'status' : UserStatus.PENDING})
@@ -155,6 +161,10 @@ class AuthService:
     async def login(self, payload : LoginRequest, db : AsyncSession) -> ResponseModel[LoginResponse] : 
 
         user = await self.user_repository.find_by_email(payload.email, db)
+
+        if not user : 
+            raise NotFound("Email address doesn't match")
+        
         valid_password = check_password(user.password, payload.password)
         now = datetime.now(timezone.utc)
 

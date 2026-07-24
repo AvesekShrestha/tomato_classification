@@ -17,7 +17,7 @@ class Comment(Base):
         nullable=False
     )
     post_id: Mapped[int] = mapped_column(
-        ForeignKey("posts.id"),
+        ForeignKey("posts.id", onupdate="CASCADE"),
         nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(

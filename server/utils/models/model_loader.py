@@ -16,7 +16,7 @@ def load_model() :
         raise InternalServerError("No model found")
 
     if model is None :
-        model = CNN(num_classes=10)
+        model = CNN(num_classes=11)
         model.load_state_dict(torch.load(file_path, map_location=device, weights_only=True))
         return model
 

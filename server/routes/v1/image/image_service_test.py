@@ -11,12 +11,13 @@ import json
 from typing import cast
 import torch.nn.functional as F
 
-class ImageService : 
+class ImageServiceTest : 
 
     def __init__(self) -> None:
         self.client = genai.Client()
 
     async def predict(self, file):
+        print("Inside predict test function")
 
         classes = [
             'Tomato___Bacterial_spot',
@@ -28,7 +29,6 @@ class ImageService :
             'Tomato___Target_Spot',
             'Tomato___Tomato_Yellow_Leaf_Curl_Virus',
             'Tomato___Tomato_mosaic_virus',
-            'Tomato___Unknown',
             'Tomato___healthy'
         ]
 
@@ -50,41 +50,29 @@ class ImageService :
 
         model = get_model()
 
+        # Define Temperature and Threshold
+        TEMPERATURE = 2.5  # T > 1 softens logits for out-of-distribution images
+        THRESHOLD = 0.75   # Minimum required probability post-scaling
+
         with torch.no_grad():
-            output = model(input_tensor)
+            logits = model(input_tensor)
 
-            probs = F.softmax(output, dim=1)
+            # 1. Scale raw logits by Temperature BEFORE Softmax
+            scaled_logits = logits / TEMPERATURE
 
+            # 2. Compute softened probabilities
+            probs = F.softmax(scaled_logits, dim=1)
+
+            # 3. Get top class confidence and index
             confidence, prediction = torch.max(probs, 1)
 
             confidence_score = float(confidence.item())
             predicted_class = classes[int(prediction.item())]
 
-            print(confidence_score, predicted_class)
+        print(f"Confidence: {confidence_score:.2%}, Class: {predicted_class}")
 
-        THRESHOLD = 0.7
-
+        # Reject as "Unknown" if confidence doesn't clear the scaled threshold
         if confidence_score < THRESHOLD:
             return "Unknown"
 
         return predicted_class
-
-    def get_diesase_info(self, disease_class) -> ImageResponse : 
-
-        if disease_class in ["Unknown", "Tomato___Unknown"] :
-            return ImageResponse(
-                predicted_class="Unknown"
-            )
-
-        prompt = get_prompt(disease_class)
-        response = self.client.models.generate_content(
-            model="gemini-3-flash-preview",
-            contents=f"{prompt}",
-        )
-
-        text_response = response.text
-        parsed = json.loads(str(text_response))
-
-        return ImageResponse(**parsed)
-
-

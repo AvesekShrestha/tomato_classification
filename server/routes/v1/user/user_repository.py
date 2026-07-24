@@ -29,13 +29,14 @@ class UserRepository:
 
         return user
 
-    async def find_by_email(self, user_email : EmailStr, db: AsyncSession) -> User :
+    async def find_by_email(self, user_email : EmailStr, db: AsyncSession) -> User | None :
         statement = select(User).where(User.email == user_email)
         result = await db.execute(statement)
         user = result.scalar_one_or_none()
 
         if not user : 
-            raise NotFound("User not found")
+            # raise NotFound("Email address doesn't match")
+            return None
 
         return user
 

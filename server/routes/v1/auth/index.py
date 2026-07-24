@@ -13,7 +13,7 @@ from utils.response.index import ResponseModel
 from .auth_service import AuthService
 from sqlalchemy.exc import IntegrityError
 from utils.errors.index import ValueError
-
+import asyncpg
 
 router = APIRouter()
 auth_service = AuthService()
@@ -63,9 +63,16 @@ async def register(payload : RegisterRequest, background_task : BackgroundTasks,
         response = await auth_service.register(payload, background_task, db)
         return response
 
+    # except IntegrityError as e:
+    #     detail_message = getattr(e.orig, 'detail', str(e.orig))
+    #     raise ValueError(detail_message)
+    #
     except IntegrityError as e:
-        detail_message = getattr(e.orig, 'detail', str(e.orig))
-        raise ValueError(detail_message)
+        if isinstance(e.orig, asyncpg.exceptions.UniqueViolationError):
+            if "users_email_key" in str(e.orig):
+                raise ValueError("Email already exists")
+
+        raise ValueError("Duplicate data already exists")
         
     except Exception as e:
         error_message = e.args[0] if e.args[0] else str(e)

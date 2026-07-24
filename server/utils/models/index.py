@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 class CNN(nn.Module):
-    def __init__(self, num_classes=10):
+    def __init__(self, num_classes=11):
         super().__init__()
 
         self.features = nn.Sequential(
