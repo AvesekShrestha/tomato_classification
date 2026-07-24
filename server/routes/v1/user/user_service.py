@@ -1,3 +1,4 @@
+from routes.v1.user.dto.dashboard_response import DashboardResponse
 from routes.v1.user.dto.expert_response import ExpertResponse
 from routes.v1.user.dto.user_response import UserResponse
 from schemas.user import UserStatus
@@ -146,3 +147,13 @@ class UserService:
         await db.commit()
 
         return response 
+
+    async def dashboard(self, user_id : int, db : AsyncSession) -> ResponseModel[DashboardResponse]: 
+        data : DashboardResponse = await self.user_repository.dashboard(user_id=user_id, db=db)
+        response : ResponseModel[DashboardResponse] = ResponseModel[DashboardResponse](
+            success=True,
+            data=data,
+            message="dashboard data reterived successfully",
+            pagination=None
+        )
+        return response

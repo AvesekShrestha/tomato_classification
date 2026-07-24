@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.database.index import  get_db
+from routes.v1.user.dto.dashboard_response import DashboardResponse
 from routes.v1.user.dto.expert_response import ExpertResponse
 from routes.v1.user.dto.user_response import UserResponse
 from schemas import user
@@ -22,6 +23,17 @@ async def get_all(db : AsyncSession = Depends(get_db)) -> ResponseModel[List[Use
     except Exception as e : 
         error_message = e.args[0] if e.args[0] else str(e)
         raise InternalServerError(error_message)
+
+@router.get("/dashboard")
+async def dashboard(db : AsyncSession = Depends(get_db), user_id = Depends(current_user_id)) : 
+    try : 
+        response : ResponseModel[DashboardResponse] = await user_service.dashboard(user_id=user_id, db=db)
+        return response
+
+    except Exception as e : 
+        error_message = e.args[0] if e.args[0] else str(e)
+        raise InternalServerError(error_message)
+
         
 @router.get("/expert", response_model=ResponseModel[List[ExpertResponse]], response_model_exclude_none=True)
 async def find_experts(db : AsyncSession = Depends(get_db)) -> ResponseModel[List[ExpertResponse]] : 

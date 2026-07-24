@@ -1,11 +1,14 @@
 from datetime import datetime, timedelta
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
+from routes.v1.user.dto.dashboard_response import DashboardResponse
 from schemas.user import User, UserStatus
 from utils.errors.index import NotFound
-from sqlalchemy import select
+from sqlalchemy import select, func
 from typing import List
 from schemas.user import UserRole
+from schemas.post import Post
+from schemas.comment import Comment
 
 class UserRepository: 
 
@@ -62,3 +65,29 @@ class UserRepository:
         experts = result.scalars().all()
 
         return list(experts)
+
+    async def dashboard(self, user_id : int, db : AsyncSession) -> DashboardResponse : 
+        
+        query = select(
+        (
+            select(func.count(Post.id))
+            .where(Post.user_id == user_id)
+            .scalar_subquery()
+        ).label("total_posts"),
+
+        (
+            select(func.count(Comment.id))
+            .where(Comment.user_id == user_id)
+            .scalar_subquery()
+        ).label("total_comments")
+    )
+
+        result = await db.execute(query)
+        dashboard = result.one()
+
+        response : DashboardResponse = DashboardResponse(
+            total_posts= dashboard.total_posts,
+            total_comments = dashboard.total_comments
+        )
+        
+        return response
