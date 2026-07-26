@@ -1,7 +1,8 @@
-from routes.v1.user.dto.dashboard_response import DashboardResponse
+from routes.v1.user.dto.dashboard_response import AdminDashboardResponse, ExpertDashboardResponse,FramerDashboardResponse
 from routes.v1.user.dto.expert_response import ExpertResponse
 from routes.v1.user.dto.user_response import UserResponse
 from schemas.user import UserStatus
+from utils.errors.index import NotFound
 from utils.response.index import ResponseModel
 from .user_repository import UserRepository
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -148,12 +149,21 @@ class UserService:
 
         return response 
 
-    async def dashboard(self, user_id : int, db : AsyncSession) -> ResponseModel[DashboardResponse]: 
-        data : DashboardResponse = await self.user_repository.dashboard(user_id=user_id, db=db)
-        response : ResponseModel[DashboardResponse] = ResponseModel[DashboardResponse](
+    async def dashboard(self, user_id : int, db : AsyncSession) -> ResponseModel[FramerDashboardResponse | AdminDashboardResponse | ExpertDashboardResponse]: 
+        user = await self.user_repository.find_by_id(user_id=user_id, db=db)
+
+        if not user : raise NotFound("User not found")
+
+        if user.role == "admin":
+            data = await self.user_repository.admin_dashboard(db)
+        elif user.role == "expert" : 
+            data = await self.user_repository.expert_dashboard(user_id=user_id, db=db)
+        else:
+            data = await self.user_repository.farmer_dashboard(user.id, db)
+
+        return ResponseModel(
             success=True,
             data=data,
-            message="dashboard data reterived successfully",
+            message="Dashboard retrieved successfully",
             pagination=None
         )
-        return response

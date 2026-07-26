@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
-from routes.v1.user.dto.dashboard_response import DashboardResponse
 from schemas.user import User, UserStatus
 from utils.errors.index import NotFound
 from sqlalchemy import select, func
@@ -9,6 +8,7 @@ from typing import List
 from schemas.user import UserRole
 from schemas.post import Post
 from schemas.comment import Comment
+from routes.v1.user.dto.dashboard_response import FramerDashboardResponse, AdminDashboardResponse, ExpertDashboardResponse
 
 class UserRepository: 
 
@@ -66,7 +66,7 @@ class UserRepository:
 
         return list(experts)
 
-    async def dashboard(self, user_id : int, db : AsyncSession) -> DashboardResponse : 
+    async def farmer_dashboard(self, user_id : int, db : AsyncSession) -> FramerDashboardResponse : 
         
         query = select(
         (
@@ -85,9 +85,89 @@ class UserRepository:
         result = await db.execute(query)
         dashboard = result.one()
 
-        response : DashboardResponse = DashboardResponse(
+        response : FramerDashboardResponse = FramerDashboardResponse(
             total_posts= dashboard.total_posts,
             total_comments = dashboard.total_comments
         )
         
         return response
+
+    
+    async def admin_dashboard(
+        self,
+        db: AsyncSession
+    ) -> AdminDashboardResponse:
+
+        query = select(
+            (
+                select(func.count(User.id))
+                .where(User.role == "farmer")
+                .scalar_subquery()
+            ).label("total_farmers"),
+
+            (
+                select(func.count(User.id))
+                .where(User.role == "expert")
+                .scalar_subquery()
+            ).label("total_experts"),
+
+            (
+                select(func.count(User.id))
+                .scalar_subquery()
+            ).label("total_users"),
+
+            (
+                select(func.count(Post.id))
+                .scalar_subquery()
+            ).label("total_posts"),
+
+            (
+                select(func.count(Comment.id))
+                .scalar_subquery()
+            ).label("total_comments"),
+        )
+
+        result = await db.execute(query)
+        dashboard = result.one()
+
+        return AdminDashboardResponse(
+            total_farmers=dashboard.total_farmers,
+            total_experts=dashboard.total_experts,
+            total_users=dashboard.total_users,
+            total_posts=dashboard.total_posts,
+            total_comments=dashboard.total_comments,
+        )
+    async def expert_dashboard(
+        self,
+        user_id: int,
+        db: AsyncSession
+    ) -> ExpertDashboardResponse:
+
+        query = select(
+            (
+                select(func.count(User.id))
+                .where(User.role == "farmer")
+                .scalar_subquery()
+            ).label("total_farmers"),
+
+            (
+                select(func.count(Post.id))
+                .where(Post.user_id == user_id)
+                .scalar_subquery()
+            ).label("total_posts"),
+
+            (
+                select(func.count(Comment.id))
+                .where(Comment.user_id == user_id)
+                .scalar_subquery()
+            ).label("total_comments"),
+        )
+
+        result = await db.execute(query)
+        dashboard = result.one()
+
+        return ExpertDashboardResponse(
+            total_farmers=dashboard.total_farmers,
+            total_posts=dashboard.total_posts,
+            total_comments=dashboard.total_comments,
+        )

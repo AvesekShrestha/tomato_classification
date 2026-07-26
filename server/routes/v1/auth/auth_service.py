@@ -40,6 +40,9 @@ class AuthService:
         user = await self.user_repository.find_by_email(user_email=payload.email, db=db)
         otp = generate_otp()
 
+        if not user : 
+            raise NotFound(f"User with email address : {payload.email} not found")
+
         background_task.add_task(send_mail, otp, payload.email)
         user.otp = otp
         user.otp_expires_at = datetime.now() + timedelta(minutes=5) 
@@ -58,6 +61,10 @@ class AuthService:
 
         if not payload.otp :
             raise ValueError("OTP required for verfiying")
+
+        if not user : 
+            raise NotFound(f"User with email address : {payload.email} not found")
+
 
         if not user.otp :
             raise InternalServerError("OTP is not present")
@@ -164,7 +171,10 @@ class AuthService:
 
         if not user : 
             raise NotFound("Email address doesn't match")
-        
+
+        if user.role != "admin" and not user.is_verified : 
+            raise BadRequest(f"Verify OTP before login")
+       
         valid_password = check_password(user.password, payload.password)
         now = datetime.now(timezone.utc)
 
