@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
+from schemas.scan import Scan
 from schemas.user import User, UserStatus
 from utils.errors.index import NotFound
 from sqlalchemy import select, func
@@ -79,7 +80,13 @@ class UserRepository:
             select(func.count(Comment.id))
             .where(Comment.user_id == user_id)
             .scalar_subquery()
-        ).label("total_comments")
+        ).label("total_comments"),
+
+        (
+            select(func.count(Scan.id))
+            .where(Scan.user_id == user_id)
+            .scalar_subquery()
+        ).label("total_scans")
     )
 
         result = await db.execute(query)
@@ -87,11 +94,10 @@ class UserRepository:
 
         response : FramerDashboardResponse = FramerDashboardResponse(
             total_posts= dashboard.total_posts,
-            total_comments = dashboard.total_comments
+            total_comments = dashboard.total_comments,
+            total_scans=dashboard.total_scans
         )
-        
         return response
-
     
     async def admin_dashboard(
         self,
@@ -161,6 +167,13 @@ class UserRepository:
                 .where(Comment.user_id == user_id)
                 .scalar_subquery()
             ).label("total_comments"),
+            (
+                 select(func.count(Scan.id))
+                .where(Scan.user_id == user_id)
+                .scalar_subquery()
+            ).label("total_scans")
+
+
         )
 
         result = await db.execute(query)
@@ -170,4 +183,5 @@ class UserRepository:
             total_farmers=dashboard.total_farmers,
             total_posts=dashboard.total_posts,
             total_comments=dashboard.total_comments,
+            total_scans=dashboard.total_scans
         )

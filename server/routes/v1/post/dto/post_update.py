@@ -3,6 +3,5 @@ from pydantic import BaseModel
 
 
 class PostUpdate(BaseModel) : 
-    title : Optional[str]
-    content : Optional[str]
-
+    title : Optional[str] = None
+    content : Optional[str] = None

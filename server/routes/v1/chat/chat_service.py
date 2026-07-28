@@ -1,11 +1,14 @@
 import base64
 from datetime import datetime
 from typing import List
+from fastapi import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.socket.index import SocketManager
 from routes.v1.chat.dto.chat_request import ChatRequest
 from routes.v1.chat.dto.chat_response import ChatResponse
 from routes.v1.chat.dto.message_request import MessageRequest
+from routes.v1.chat.dto.conversation_response import ConversationResponse
+from routes.v1.user.user_repository import UserRepository
 from schemas.chat import Chat
 from .chat_repository import ChatRepository
 from utils.response.index import Pagination, ResponseModel
@@ -15,6 +18,7 @@ class ChatService:
     def __init__(self, manager : SocketManager) : 
         self.socket_manager = manager
         self.chat_repository = ChatRepository()
+        self.user_repository = UserRepository()
 
     async def send_message(self, payload : MessageRequest, user_id : int, db : AsyncSession) :
         chat_payload : ChatRequest = ChatRequest(
@@ -38,7 +42,6 @@ class ChatService:
                 "messaged_at": chat_payload.messaged_at.isoformat(),
             }
         )
-
 
     async def get_message(self, user_id : int, receiver_id : int, limit : int, cursor : str | None, db : AsyncSession) -> ResponseModel[List[ChatResponse]] :
 
@@ -72,3 +75,51 @@ class ChatService:
             )
         )
         return response
+
+    async def get_conversations(
+        self,
+        current_user_id: int,
+        db : AsyncSession
+    ) -> ResponseModel[list[ConversationResponse]]:
+
+        messages = await self.chat_repository.get_user_messages(current_user_id, db=db)
+
+        latest_messages = {}
+        for message in messages:
+
+            other_user = (
+                message.receiver_id
+                if message.sender_id == current_user_id
+                else message.sender_id
+            )
+
+            if other_user not in latest_messages:
+                latest_messages[other_user] = message
+
+        conversations = []
+
+        for user_id, message in latest_messages.items():
+
+            user = await self.user_repository.find_by_id(user_id,db)
+
+            if user is None:
+                continue
+
+            conversations.append(
+                ConversationResponse(
+                    user_id=user.id,
+                    username=user.username,
+                    last_message=message.message,
+                    last_message_at=message.messaged_at,
+                )
+            )
+
+        conversations.sort(
+            key=lambda x: x.last_message_at,
+            reverse=True,
+        )
+        return ResponseModel(
+            success=True,
+            data=conversations,
+            message="List of user with conversations history reterived successfully",
+        )

@@ -82,7 +82,7 @@ async def register(payload : RegisterRequest, background_task : BackgroundTasks,
 async def login(res : Response, payload : LoginRequest, db:AsyncSession = Depends(get_db)) -> ResponseModel[LoginResponse] : 
     try:
         REFRESH_TOKEN_MAX_AGE = 15 * 24 * 60 * 60
-        ACCESS_TOKEN_MAX_AGE = 5 * 60 * 60
+        ACCESS_TOKEN_MAX_AGE = 1 * 60 * 60
 
         response : ResponseModel[LoginResponse] = await auth_service.login(payload=payload, db=db)
 

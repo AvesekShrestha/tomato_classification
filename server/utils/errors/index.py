@@ -46,3 +46,14 @@ class OTPExpired(AppException):
     def __init__(self, message: str = "OTP Expired"):
         super().__init__(status_code=400, message=message)
 
+class BadGateway(AppException):
+    def __init__(self, message: str = "Bad Gateway or upstream AI service error"):
+        super().__init__(status_code=502, message=message)
+
+class ServiceUnavailable(AppException):
+    def __init__(self, message: str = "Service unavailable due to high demand. Please try again later"):
+        super().__init__(status_code=503, message=message)
+
+class RateLimitExceeded(AppException):
+    def __init__(self, message: str = "Rate limit exceeded. Please try again later"):
+        super().__init__(status_code=429, message=message)

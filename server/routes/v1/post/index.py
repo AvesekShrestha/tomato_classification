@@ -4,6 +4,7 @@ from config.database.index import get_db
 from middlewares.auth_middleware import current_user_id
 from routes.v1.post.dto.post_request import PostRequest
 from routes.v1.post.dto.post_response import PostResponse
+from routes.v1.post.dto.post_update import PostUpdate
 from utils.errors.index import InternalServerError
 from .post_service import PostService
 from utils.response.index import ResponseModel
@@ -62,6 +63,16 @@ async def create(title : str = Form(...), content : str = Form(...), image : Upl
         error_message : str = e.args[0] if e.args[0] else str(e)
         raise InternalServerError(error_message)
 
+@router.patch("/{post_id}", response_model=ResponseModel[PostResponse] , response_model_exclude_none=True)
+async def update(post_id : int, data : PostUpdate, db : AsyncSession = Depends(get_db)) -> ResponseModel[PostResponse] :
+    try :
+        response : ResponseModel[PostResponse] = await post_service.update(payload=data, post_id=post_id, db=db)
+        return response
+
+    except Exception as e: 
+        error_message : str = e.args[0] if e.args[0] else str(e)
+        raise InternalServerError(error_message)
+
 @router.post("/{post_id}/like", response_model_exclude_none=True, response_model=ResponseModel[PostResponse])
 async def like(post_id : int, user_id : int = Depends(current_user_id), db : AsyncSession = Depends(get_db)) -> ResponseModel[PostResponse] : 
     try : 
@@ -81,6 +92,7 @@ async def dislike(post_id : int, user_id : int = Depends(current_user_id), db : 
     except Exception as e : 
         error_message : str = e.args[0] if e.args[0] else str(e)
         raise InternalServerError(error_message)
+
 
 
 @router.delete("/{post_id}", response_model=ResponseModel[None], response_model_exclude_none=True)

@@ -188,7 +188,7 @@ class AuthService:
             role=user.role,
             type=TokenType.ACCESS,
             iat=int(now.timestamp()),
-            exp=int((now + timedelta(minutes=5)).timestamp())
+            exp=int((now + timedelta(hours=1)).timestamp())
         )
         access_token = generate_access_token(access_token_payload)
         refresh_token = generate_refresh_token()

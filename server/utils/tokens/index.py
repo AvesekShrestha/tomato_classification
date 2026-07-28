@@ -6,7 +6,6 @@ import secrets
 
 def generate_access_token(payload : AccessTokenPayload) -> str : 
     encoded = jwt.encode(payload.model_dump(), jwt_private_key, algorithm="HS256")
-    print(encoded)
     return encoded
 
 def decode_access_token(token : str) -> AccessTokenPayload:

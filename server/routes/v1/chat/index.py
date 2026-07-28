@@ -6,6 +6,7 @@ from config.socket.index import socket_manager
 from middlewares.auth_middleware import current_user_id, socket_current_user_id
 from routes.v1.chat.chat_service import ChatService
 from routes.v1.chat.dto.chat_response import ChatResponse
+from routes.v1.chat.dto.conversation_response import ConversationResponse
 from routes.v1.chat.dto.message_request import MessageRequest
 from utils.errors.index import InternalServerError
 from utils.response.index import ResponseModel
@@ -26,6 +27,18 @@ async def chat(socket : WebSocket, user_id : int = Depends(socket_current_user_i
     except WebSocketDisconnect :
         await socket_manager.disconnect(user_id=user_id)
 
+@router.get("/conversation", response_model=ResponseModel[List[ConversationResponse]], response_model_exclude_none=True)
+async def get_conversations(user_id : int = Depends(current_user_id), db : AsyncSession = Depends(get_db)) -> ResponseModel[List[ConversationResponse]]:
+
+    try : 
+        response : ResponseModel[List[ConversationResponse]] = await chat_service.get_conversations(current_user_id=user_id, db=db)
+        return response
+
+    except Exception as e:
+        error_mesage : str = e.args[0] if e.args[0] else str(e)
+        raise InternalServerError(error_mesage)
+
+
 @router.get("/{receiver_id}", response_model=ResponseModel[List[ChatResponse]], response_model_exclude_none=True)
 async def get_message(receiver_id : int, limit : int = 10, cursor : str | None = None, user_id : int = Depends(current_user_id), db : AsyncSession = Depends(get_db)) -> ResponseModel[List[ChatResponse]]:
 
@@ -36,6 +49,5 @@ async def get_message(receiver_id : int, limit : int = 10, cursor : str | None =
     except Exception as e:
         error_mesage : str = e.args[0] if e.args[0] else str(e)
         raise InternalServerError(error_mesage)
-
 
 

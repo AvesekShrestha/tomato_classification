@@ -44,5 +44,17 @@ class ChatRepository :
 
         return list(chats)
 
-         
 
+    async def get_user_messages(self, user_id: int, db : AsyncSession) -> List[Chat]:
+        result = await db.execute(
+            select(Chat)
+            .where(
+                or_(
+                    Chat.sender_id == user_id,
+                    Chat.receiver_id == user_id,
+                )
+            )
+            .order_by(Chat.messaged_at.desc())
+        )
+
+        return list(result.scalars().all())
