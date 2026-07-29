@@ -66,7 +66,7 @@ async def me(db : AsyncSession = Depends(get_db), user_id = Depends(current_user
         error_message = e.args[0] if e.args[0] else str(e)
         raise InternalServerError(error_message)
 
-@router.get("/{user_id}")
+@router.get("/{user_id}", response_model=ResponseModel[UserResponse])
 async def get_by_id(user_id : int, db : AsyncSession = Depends(get_db)) -> ResponseModel[UserResponse] : 
     try : 
         response = await user_service.find_by_id(user_id, db)

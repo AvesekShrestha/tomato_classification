@@ -8,8 +8,8 @@ class UserResponse(BaseModel) :
     username : str
     email : EmailStr
     role : UserRole
+    online : bool = False
 
     model_config = ConfigDict(
         from_attributes=True,
     )
-
