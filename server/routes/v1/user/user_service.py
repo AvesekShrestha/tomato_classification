@@ -23,7 +23,8 @@ class UserService:
                     id=user.id,
                     username=user.username,
                     email=user.email,
-                    role=user.role
+                    role=user.role,
+                    online=socket_manager.is_online(user.id)
                 )
                 for user in users
             ],
@@ -40,7 +41,8 @@ class UserService:
                 id=user.id,
                 username=user.username,
                 email=user.email,
-                role=user.role
+                role=user.role,
+                online=socket_manager.is_online(user.id)
             ),
             message="User retrived successfully"
         )
@@ -55,7 +57,8 @@ class UserService:
                 id=user.id,
                 username=user.username,
                 email=user.email,
-                role=user.role
+                role=user.role,
+                online=socket_manager.is_online(user.id)
             ),
             message="User retrived successfully"
         )
