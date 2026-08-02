@@ -94,4 +94,5 @@ docker-compose.override.yml
 *.pem
 
 *.pth
+*.pth.zip
 uploads/
