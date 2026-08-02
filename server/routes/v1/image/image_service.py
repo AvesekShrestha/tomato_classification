@@ -1,5 +1,4 @@
 from fastapi import HTTPException, status
-from google import genai
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import exc
 from torchvision.transforms import Resize, Normalize, ToTensor, Compose
@@ -13,10 +12,9 @@ import torch
 from utils.errors.index import BadGateway, InternalServerError, ServiceUnavailable
 from utils.prompt.index import get_prompt
 import json
+import requests
 from typing import cast
 import torch.nn.functional as F
-from google.genai.errors import ServerError, APIError
-from google.genai import types
 from utils.errors.index import AppException
 import uuid
 from pathlib import Path
@@ -24,7 +22,6 @@ from pathlib import Path
 class ImageService : 
 
     def __init__(self) -> None:
-        self.client = genai.Client()
         self.image_repository = ImageRepository()
 
     async def predict(self, user_id : int, file, db : AsyncSession) -> ImageResponse:
@@ -120,37 +117,36 @@ class ImageService :
         prompt = get_prompt(disease_class)
 
         try:
-            response = self.client.models.generate_content(
-                model="gemini-3-flash-preview",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=ImageResponse,
-                ),
+            response = requests.post(
+                "http://localhost:11434/api/generate",
+                json={
+                    "model": "llama3.2",
+                    "prompt": prompt,
+                    "format": "json",
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.2,
+                    },
+                },
+                timeout=60,
             )
 
-            if response and response.parsed:
-                text_response = response.text
-                parsed = json.loads(str(text_response))
-                return ImageResponse(**parsed)
+            response.raise_for_status()
 
-            raise BadGateway("Model returned empty response") 
-        except (ServerError, APIError) as e:
-            error_msg = str(e)
-            
-            is_high_traffic = (
-                getattr(e, "code", None) in [503, 500, 429] 
-                or "UNAVAILABLE" in error_msg 
-                or "high demand" in error_msg.lower() 
-                or "overloaded" in error_msg.lower()
-            )
+            ollama_data = response.json()
+            text_response = ollama_data.get("response")
 
-            if is_high_traffic:
-                raise ServiceUnavailable("The AI model is currently experiencing high traffic. Try later")
-            raise BadGateway("AI Service Error. Failed to generate response.")
+            if not text_response:
+                raise BadGateway("Model returned empty response")
 
+            parsed = json.loads(text_response)
+            return ImageResponse(**parsed)
+        except requests.exceptions.ConnectionError:
+            raise ServiceUnavailable("Ollama is not running. Start it with: ollama serve")
+        except requests.exceptions.Timeout:
+            raise ServiceUnavailable("Ollama took too long to respond. Try again.")
         except AppException: 
             raise
 
         except Exception:
-            raise InternalServerError("An unexpected error occurred while processing the request.")
+            raise BadGateway("AI Service Error. Failed to generate disease advice.")

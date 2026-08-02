@@ -1,10 +1,14 @@
 from pathlib import Path
+import os
 import torch
+from dotenv import load_dotenv
 from utils.errors.index import InternalServerError
 from utils.models.index import CNN
 
 
-file_path = Path("/home/avesek/Documents/workspace/collage/seventh/project/tomato_classification/model/tomato_state_dict.pth").resolve()
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
+file_path = Path(os.environ["MODEL_PATH"]).expanduser().resolve()
 model = None
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -13,7 +17,10 @@ def load_model() :
     print("Hello from load model function")
 
     if not file_path.exists() : 
-        raise InternalServerError("No model found")
+        raise InternalServerError(f"No model found at {file_path}")
+
+    if not file_path.is_file() : 
+        raise InternalServerError(f"MODEL_PATH must point to a model file, got {file_path}")
 
     if model is None :
         model = CNN(num_classes=11)
